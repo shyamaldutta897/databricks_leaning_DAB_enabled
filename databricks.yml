@@ -32,7 +32,7 @@ targets:
     default: true
     workspace:
       host: https://adb-7405611310235533.13.azuredatabricks.net
-      root_path: /Workspace/Users/shyamal6661@outlook.com/databricks_leaning_DAB_enabled
+      root_path: /Workspace/Users/shyamal6661@outlook.com/repos/databricks_leaning_DAB_enabled
     variables:
       catalog: skd_personal_bronze
       schema: new_schema
@@ -41,7 +41,7 @@ targets:
     workspace:
       host: https://adb-7405611310235533.13.azuredatabricks.net/
       # We explicitly deploy to /Workspace/Users/shyamal6661@outlook.com to make sure we only have a single copy.
-      root_path: /Workspace/Users/shyamal6661@outlook.com/.bundle/${bundle.name}/${bundle.target}
+      root_path: /Workspace/Users/shyamal6661@outlook.com/repos/databricks_leaning_DAB_enabled
     variables:
       catalog: skd_personal_bronze
       schema: prod
