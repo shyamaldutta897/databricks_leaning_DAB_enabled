@@ -10,15 +10,15 @@ joined_df=orders_silver.alias('o').join(customers_silver.alias('c'),on=(col('o.c
                        .drop('c.customer_id','c.Address')
 filtered_df=joined_df.filter((col('city').isNotNull()) | (col('state').isNotNull()))
 
-groupped_df=filtered_df.groupBy('city','state','status').agg(sum('total_amount').alias('total_sales'))
+grouped_df=filtered_df.groupBy('city','state','status').agg(sum('total_amount').alias('total_sales'))
 
-statuses_df=groupped_df.select('status').distinct()
+statuses_df=grouped_df.select('status').distinct()
 statuses_list=[row['status'] for row in statuses_df.collect()]
 
 dbutils.jobs.taskValues.set(key='status_list',value=statuses_list)
 
 
-(groupped_df.
+(grouped_df.
  write.
  format('delta').
  mode('overwrite').

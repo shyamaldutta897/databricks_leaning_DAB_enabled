@@ -6,7 +6,6 @@ resources:
         connection_name: skd_personal_sql_migration_password
         gateway_storage_catalog: skd_personal_bronze
         gateway_storage_schema: sql_migration_staging
-        source_type: SQLSERVER
       schema: sql_migration_staging
       continuous: true
       catalog: skd_personal_bronze

@@ -28,14 +28,14 @@ targets:
     mode: development
     default: true
     workspace:
-      host: https://adb-7405614195456071.11.azuredatabricks.net
+      host: https://adb-7405611310235533.13.azuredatabricks.net
     variables:
       catalog: skd_personal_bronze
       schema: new_schema
   prod:
     mode: production
     workspace:
-      host: https://adb-7405614195456071.11.azuredatabricks.net
+      host: https://adb-7405611310235533.13.azuredatabricks.net/
       # We explicitly deploy to /Workspace/Users/shyamal6661@outlook.com to make sure we only have a single copy.
       root_path: /Workspace/Users/shyamal6661@outlook.com/.bundle/${bundle.name}/${bundle.target}
     variables:
