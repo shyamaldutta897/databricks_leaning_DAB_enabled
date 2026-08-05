@@ -4,11 +4,11 @@ resources:
       name: DLT pipeline with multiple notebooks
       libraries:
         - notebook:
-            path: ../../Practice/TT_W20_DLT_Scripts/DLT_demo_customers.sql
+            path: ../../src/Practice/TT_W20_DLT_Scripts/DLT_demo_customers.sql
         - notebook:
-            path: ../../Practice/TT_W20_DLT_Scripts/DLT_demo_orders.sql
+            path: ../../src/Practice/TT_W20_DLT_Scripts/DLT_demo_orders.sql
       schema: new_schema
       photon: true
       catalog: skd_personal_bronze
       serverless: true
-      root_path: ./resources/pipelines/DLT pipeline with multiple notebooks.yml
+      root_path: ../../src/Practice/TT_W20_DLT_Scripts

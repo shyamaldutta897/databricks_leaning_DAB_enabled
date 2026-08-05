@@ -5,7 +5,10 @@ bundle:
   uuid: 0c63a5bb-5c4b-40c5-bdf3-79fde948cf46
 
 include:
-  - resources/*.yml
+  # - resources/*.yml
+  # - resources/jobs/*.yml
+  # - resources/pipelines/*.yml
+    - resources/**/*.yml
 
 # artifacts:
 #   python_artifact:
@@ -29,6 +32,7 @@ targets:
     default: true
     workspace:
       host: https://adb-7405611310235533.13.azuredatabricks.net
+      root_path: /Workspace/Users/shyamal6661@outlook.com/databricks_leaning_DAB_enabled
     variables:
       catalog: skd_personal_bronze
       schema: new_schema

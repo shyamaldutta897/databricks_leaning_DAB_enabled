@@ -3,7 +3,7 @@ resources:
     pipeline_sql_migration_pipeline:
       name: sql_migration_pipeline
       ingestion_definition:
-        ingestion_gateway_id: d94db9ff-a924-4fff-80f1-8438f0c87bae
+        ingestion_gateway_id: ${resources.pipelines.pipeline_sql_migration_gateway.id}
         objects:
           - table:
               source_catalog: skd_personal_sql_db

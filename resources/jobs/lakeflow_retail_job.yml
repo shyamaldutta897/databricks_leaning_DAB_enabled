@@ -5,29 +5,29 @@ resources:
       tasks:
         - task_key: customers_bronze
           spark_python_task:
-            python_file: ../../Practice/TT_W21_Databricks_LakeFlow_Jobs/LakeFlow_Jobs_creating_ingest_customers.py
+            python_file: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/LakeFlow_Jobs_creating_ingest_customers.py
           environment_key: Default
         - task_key: customers_cleaned
           depends_on:
             - task_key: customers_bronze
           spark_python_task:
-            python_file: ../../Practice/TT_W21_Databricks_LakeFlow_Jobs/LakeFlow_Jobs_creating_customers_enriched.py
+            python_file: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/LakeFlow_Jobs_creating_customers_enriched.py
           environment_key: Default
         - task_key: customers_silver
           depends_on:
             - task_key: customers_cleaned
           spark_python_task:
-            python_file: ../../Practice/TT_W21_Databricks_LakeFlow_Jobs/Lakeflow_jobs_creating_silver_tables.py
+            python_file: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/Lakeflow_jobs_creating_silver_tables.py
           environment_key: Default
         - task_key: orders_bronze
           spark_python_task:
-            python_file: ../../Practice/TT_W21_Databricks_LakeFlow_Jobs/LakeFlow_Jobs_creating_ingest_tables.py
+            python_file: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/LakeFlow_Jobs_creating_ingest_tables.py
           environment_key: Default
         - task_key: orders_silver
           depends_on:
             - task_key: orders_bronze
           notebook_task:
-            notebook_path: ../../Practice/TT_W21_Databricks_LakeFlow_Jobs/Lakeflow_jobs_creating_orders_silver_notebook.ipynb
+            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/Lakeflow_jobs_creating_orders_silver_notebook.py
             source: WORKSPACE
         - task_key: check_duplicate
           depends_on:
@@ -41,14 +41,14 @@ resources:
             - task_key: check_duplicate
               outcome: "true"
           spark_python_task:
-            python_file: ../../Practice/TT_W21_Databricks_LakeFlow_Jobs/LakeFlow_Jobs_creating_silver_orders_has_dups.py
+            python_file: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/LakeFlow_Jobs_creating_silver_orders_has_dups.py
           environment_key: Default
         - task_key: no_dups
           depends_on:
             - task_key: check_duplicate
               outcome: "false"
           spark_python_task:
-            python_file: ../../Practice/TT_W21_Databricks_LakeFlow_Jobs/LakeFlow_Jobs_creating_silver_orders_no_dups.py
+            python_file: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/LakeFlow_Jobs_creating_silver_orders_no_dups.py
           environment_key: Default
         - task_key: create_gold_table
           depends_on:
@@ -57,7 +57,7 @@ resources:
             - task_key: contains_dups
           run_if: NONE_FAILED
           notebook_task:
-            notebook_path: ../../Practice/TT_W21_Databricks_LakeFlow_Jobs/Lakeflow_jobs_create_gold_tables.py
+            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/Lakeflow_jobs_create_gold_tables.py.py
             source: WORKSPACE
         - task_key: create_new_table_for_each_status
           depends_on:
@@ -67,7 +67,7 @@ resources:
             task:
               task_key: create_new_table_for_each_status_iteration
               notebook_task:
-                notebook_path: ../../Practice/TT_W21_Databricks_LakeFlow_Jobs/Lakeflow_jobs_create_tables_iterative
+                notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/Lakeflow_jobs_create_tables_iterative.py
                 base_parameters:
                   status: "{{input}}"
                 source: WORKSPACE

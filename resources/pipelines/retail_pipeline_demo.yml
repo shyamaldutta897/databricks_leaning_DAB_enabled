@@ -4,8 +4,8 @@ resources:
       name: retail_pipeline_demo
       libraries:
         - notebook:
-            path: ../../Practice/TT_W20_DLT_Scripts/DLT_demo_sql.sql
-      target: new_schema
+            path: ../../src/Practice/TT_W20_DLT_Scripts/DLT_demo_sql.sql
+      schema: new_schema
       photon: true
       catalog: skd_personal_bronze
       serverless: true

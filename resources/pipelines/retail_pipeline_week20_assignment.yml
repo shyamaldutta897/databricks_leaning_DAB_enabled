@@ -4,9 +4,9 @@ resources:
       name: retail_pipeline_week20_assignment
       libraries:
         - glob:
-            include: ../../src/dbx_learning_dab_etl/transformations/retail_pipeline_week20_assignment/**
+            include: ../../src/retail_pipeline_week20_assignment/transformations/**
       schema: new_schema
       photon: true
       catalog: skd_personal_bronze
       serverless: true
-      root_path: ../../src/dbx_learning_dab_etl/transformations/retail_pipeline_week20_assignment
+      root_path: ../../src/retail_pipeline_week20_assignment

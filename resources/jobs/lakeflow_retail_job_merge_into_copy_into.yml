@@ -5,7 +5,7 @@ resources:
       tasks:
         - task_key: load_customer_raw
           notebook_task:
-            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/1. Copy_into_LakeFlow_Jobs_creating_ingest_customers.ipynb
+            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/1. Copy_into_LakeFlow_Jobs_creating_ingest_customers.py
             base_parameters:
               ingest: ingestion_schema
               clean: cleaned
@@ -16,7 +16,7 @@ resources:
           depends_on:
             - task_key: load_customer_raw
           notebook_task:
-            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/3. Merge_Into_LakeFlow_Jobs_creating_customers_enriched.ipynb
+            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/3. Merge_Into_LakeFlow_Jobs_creating_customers_enriched.py
             base_parameters:
               ingest: ingestion_schema
               clean: cleaned
@@ -27,7 +27,7 @@ resources:
           depends_on:
             - task_key: load_customers_clean
           notebook_task:
-            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/4. Merge_into_Lakeflow_jobs_creating_silver_customers.ipynb
+            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/4. Merge_into_Lakeflow_jobs_creating_silver_customers.py
             base_parameters:
               ingest: ingestion_schema
               clean: cleaned
@@ -36,7 +36,7 @@ resources:
             source: WORKSPACE
         - task_key: load_orders_raw
           notebook_task:
-            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/2. Copy_into_LakeFlow_Jobs_creating_ingest_orders.ipynb
+            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/2. Copy_into_LakeFlow_Jobs_creating_ingest_orders.py
             base_parameters:
               ingest: ingestion_schema
               clean: cleaned
@@ -47,7 +47,7 @@ resources:
           depends_on:
             - task_key: load_orders_raw
           notebook_task:
-            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/5.Merge_into_Lakeflow_jobs_creating_orders_cleaned_notebook.ipynb
+            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/5.Merge_into_Lakeflow_jobs_creating_orders_cleaned_notebook.py
             base_parameters:
               ingest: ingestion_schema
               clean: cleaned
@@ -58,7 +58,7 @@ resources:
           depends_on:
             - task_key: load_orders_cleaned
           notebook_task:
-            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/6.Merge_into_Lakeflow_jobs_creating_orders_silver_notebook_with_dups.ipynb
+            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/6.Merge_into_Lakeflow_jobs_creating_orders_silver_notebook_with_dups.py
             base_parameters:
               ingest: ingestion_schema
               clean: cleaned
@@ -70,7 +70,7 @@ resources:
             - task_key: load_customers_silver
             - task_key: load_orders_silver
           notebook_task:
-            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/7. Gold_Lakeflow_jobs_create_gold_tables.ipynb
+            notebook_path: ../../src/Practice/TT_W21_Databricks_LakeFlow_Jobs/7. Gold_Lakeflow_jobs_create_gold_tables.py
             base_parameters:
               ingest: ingestion_schema
               clean: cleaned
