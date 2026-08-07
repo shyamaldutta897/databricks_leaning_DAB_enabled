@@ -1,0 +1,19 @@
+resources:
+  jobs:
+    bundle_deploy_job:
+      name: bundle_deploy_job
+      tasks:
+        - task_key: bronze_table
+          notebook_task:
+            notebook_path: ../src/1. ingest_tables_for_cli_bundle.ipynb
+            base_parameters:
+              env: ${var.env}
+            source: WORKSPACE
+          environment_key: Default
+      queue:
+        enabled: true
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "5"
+      performance_target: PERFORMANCE_OPTIMIZED

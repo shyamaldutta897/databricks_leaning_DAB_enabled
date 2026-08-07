@@ -1,0 +1,80 @@
+resources:
+  jobs:
+    Lakeflow_retail_job:
+      name: Lakeflow_retail_job
+      tasks:
+        - task_key: customers_bronze
+          spark_python_task:
+            python_file: ../src/LakeFlow_Jobs_creating_ingest_customers.py
+          environment_key: Default
+        - task_key: customers_cleaned
+          depends_on:
+            - task_key: customers_bronze
+          spark_python_task:
+            python_file: ../src/LakeFlow_Jobs_creating_customers_enriched.py
+          environment_key: Default
+        - task_key: customers_silver
+          depends_on:
+            - task_key: customers_cleaned
+          spark_python_task:
+            python_file: ../src/Lakeflow_jobs_creating_silver_tables.py
+          environment_key: Default
+        - task_key: orders_bronze
+          spark_python_task:
+            python_file: ../src/LakeFlow_Jobs_creating_ingest_tables.py
+          environment_key: Default
+        - task_key: orders_silver
+          depends_on:
+            - task_key: orders_bronze
+          notebook_task:
+            notebook_path: ../src/Lakeflow_jobs_creating_orders_silver_notebook.py
+            source: WORKSPACE
+        - task_key: check_duplicate
+          depends_on:
+            - task_key: orders_silver
+          condition_task:
+            op: EQUAL_TO
+            left: "{{tasks.orders_silver.values.has_duplicates}}"
+            right: "true"
+        - task_key: contains_dups
+          depends_on:
+            - task_key: check_duplicate
+              outcome: "true"
+          spark_python_task:
+            python_file: ../src/LakeFlow_Jobs_creating_silver_orders_has_dups.py
+          environment_key: Default
+        - task_key: no_dups
+          depends_on:
+            - task_key: check_duplicate
+              outcome: "false"
+          spark_python_task:
+            python_file: ../src/LakeFlow_Jobs_creating_silver_orders_no_dups.py
+          environment_key: Default
+        - task_key: create_gold_table
+          depends_on:
+            - task_key: customers_silver
+            - task_key: no_dups
+            - task_key: contains_dups
+          run_if: NONE_FAILED
+          notebook_task:
+            notebook_path: ../src/Lakeflow_jobs_create_gold_tables.py
+            source: WORKSPACE
+        - task_key: create_new_table_for_each_status
+          depends_on:
+            - task_key: create_gold_table
+          for_each_task:
+            inputs: "{{tasks.create_gold_table.values.status_list}}"
+            task:
+              task_key: create_new_table_for_each_status_iteration
+              notebook_task:
+                notebook_path: ../src/Lakeflow_jobs_create_tables_iterative.py
+                base_parameters:
+                  status: "{{input}}"
+                source: WORKSPACE
+      queue:
+        enabled: true
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "5"
+      performance_target: PERFORMANCE_OPTIMIZED
