@@ -5,6 +5,9 @@
 			"referenceName": "LS_adls",
 			"type": "LinkedServiceReference"
 		},
+		"folder": {
+			"name": "session1-intro"
+		},
 		"annotations": [],
 		"type": "Json",
 		"typeProperties": {
