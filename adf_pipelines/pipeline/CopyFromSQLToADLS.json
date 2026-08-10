@@ -56,6 +56,9 @@
 				]
 			}
 		],
+		"folder": {
+			"name": "Session1 pipelines"
+		},
 		"annotations": []
 	}
 }
