@@ -155,6 +155,9 @@
 					"referenceName": "LS_adls",
 					"type": "LinkedServiceReference"
 				},
+				"folder": {
+					"name": "session1-intro"
+				},
 				"annotations": [],
 				"type": "Json",
 				"typeProperties": {
@@ -179,6 +182,9 @@
 				"linkedServiceName": {
 					"referenceName": "LS_adls",
 					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "session1-intro"
 				},
 				"annotations": [],
 				"type": "DelimitedText",
@@ -213,6 +219,9 @@
 				"linkedServiceName": {
 					"referenceName": "LS_adls",
 					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "session1-intro"
 				},
 				"annotations": [],
 				"type": "DelimitedText",
