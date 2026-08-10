@@ -1,9 +1,12 @@
 {
-	"name": "azure_sql_employees_table",
+	"name": "ds_azure_sql_employees_table",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "LS_AzureSQL",
 			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "session1-intro"
 		},
 		"annotations": [],
 		"type": "AzureSqlTable",
