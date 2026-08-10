@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "skd-personal-adf-dev"
+		},
+		"LS_AzureSQL_password": {
+			"value": ""
+		},
+		"LS_adls_accountKey": {
+			"value": ""
+		},
+		"LS_AzureSQL_properties_typeProperties_server": {
+			"value": "skd-personal-sql.database.windows.net"
+		},
+		"LS_AzureSQL_properties_typeProperties_database": {
+			"value": "skd_personal_sql_db"
+		},
+		"LS_AzureSQL_properties_typeProperties_userName": {
+			"value": "sql_admin"
+		},
+		"LS_adls_properties_typeProperties_url": {
+			"value": "https://stgsdpersonaldev.dfs.core.windows.net/"
+		},
+		"LS_http_properties_typeProperties_url": {
+			"value": "https://drive.google.com/uc?id=1zO8ekHWx9U7mrbx_0Hoxxu6od7uxJqWw&export=download"
+		}
+	}
+}
