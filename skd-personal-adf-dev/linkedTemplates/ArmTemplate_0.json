@@ -147,6 +147,65 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/ds_customer_count_aggregated')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "customer_count_aggregated",
+						"folderPath": "mdf_output",
+						"fileSystem": "adfpipelines"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_customer_data_raw')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "customer_data_raw",
+						"folderPath": "mdf_output",
+						"fileSystem": "adfpipelines"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Index\tCustomer Id\tFirst Name\tLast Name\tCompany\tCity\tCountry\tPhone 1\tPhone 2\tEmail\tSubscription Date\tWebsite",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/ds_customers_csv')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -169,7 +228,56 @@
 					"firstRowAsHeader": true,
 					"quoteChar": "\""
 				},
-				"schema": []
+				"schema": [
+					{
+						"name": "Index",
+						"type": "String"
+					},
+					{
+						"name": "Customer Id",
+						"type": "String"
+					},
+					{
+						"name": "First Name",
+						"type": "String"
+					},
+					{
+						"name": "Last Name",
+						"type": "String"
+					},
+					{
+						"name": "Company",
+						"type": "String"
+					},
+					{
+						"name": "City",
+						"type": "String"
+					},
+					{
+						"name": "Country",
+						"type": "String"
+					},
+					{
+						"name": "Phone 1",
+						"type": "String"
+					},
+					{
+						"name": "Phone 2",
+						"type": "String"
+					},
+					{
+						"name": "Email",
+						"type": "String"
+					},
+					{
+						"name": "Subscription Date",
+						"type": "String"
+					},
+					{
+						"name": "Website",
+						"type": "String"
+					}
+				]
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
@@ -360,6 +468,129 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/CleanDataFromADLS')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ds_customers_csv",
+								"type": "DatasetReference"
+							},
+							"name": "adlscustomers"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ds_customer_count_aggregated",
+								"type": "DatasetReference"
+							},
+							"name": "customersaggregated"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_customer_data_raw",
+								"type": "DatasetReference"
+							},
+							"name": "customerrawdata"
+						}
+					],
+					"transformations": [
+						{
+							"name": "selectcolumns"
+						},
+						{
+							"name": "concatnames"
+						},
+						{
+							"name": "customercountbycountry"
+						},
+						{
+							"name": "keepfields"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Index as string,",
+						"          {Customer Id} as string,",
+						"          {First Name} as string,",
+						"          {Last Name} as string,",
+						"          Company as string,",
+						"          City as string,",
+						"          Country as string,",
+						"          {Phone 1} as string,",
+						"          {Phone 2} as string,",
+						"          Email as string,",
+						"          {Subscription Date} as string,",
+						"          Website as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> adlscustomers",
+						"adlscustomers select(mapColumn(",
+						"          Index,",
+						"          {Customer Id},",
+						"          {First Name},",
+						"          {Last Name},",
+						"          Company,",
+						"          City,",
+						"          Country,",
+						"          {Phone 1},",
+						"          Email,",
+						"          {Subscription Date},",
+						"          Website",
+						"     ),",
+						"     partitionBy('roundRobin', 2),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> selectcolumns",
+						"selectcolumns derive({Full name} = concat({First Name},' ',{Last Name})) ~> concatnames",
+						"selectcolumns aggregate(groupBy(Country),",
+						"     {customer count} = count({Customer Id})) ~> customercountbycountry",
+						"concatnames select(mapColumn(",
+						"          Index,",
+						"          {Customer Id},",
+						"          {Full name},",
+						"          Company,",
+						"          City,",
+						"          Country,",
+						"          {Phone 1},",
+						"          Email,",
+						"          {Subscription Date},",
+						"          Website",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> keepfields",
+						"customercountbycountry sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> customersaggregated",
+						"keepfields sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          {Index     Customer Id     First Name     Last Name     Company     City     Country     Phone 1     Phone 2     Email     Subscription Date     Website} as string",
+						"     ),",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> customerrawdata"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_customers_csv')]",
+				"[concat(variables('factoryId'), '/datasets/ds_customer_count_aggregated')]",
+				"[concat(variables('factoryId'), '/datasets/ds_customer_data_raw')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/HttpToADLS')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -423,6 +654,44 @@
 								"parameters": {}
 							}
 						]
+					},
+					{
+						"name": "CleanDataFromADLS",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "weblink to adls",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "CleanDataFromADLS",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"adlscustomers": {},
+									"customersaggregated": {},
+									"customerrawdata": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
 					}
 				],
 				"policy": {
@@ -435,7 +704,8 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/ds_http_csv_customers_100')]",
-				"[concat(variables('factoryId'), '/datasets/ds_customers_csv')]"
+				"[concat(variables('factoryId'), '/datasets/ds_customers_csv')]",
+				"[concat(variables('factoryId'), '/dataflows/CleanDataFromADLS')]"
 			]
 		}
 	]
