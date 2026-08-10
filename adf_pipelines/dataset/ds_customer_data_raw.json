@@ -10,6 +10,8 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
+				"fileName": "customer_data_raw",
+				"folderPath": "mdf_output",
 				"fileSystem": "adfpipelines"
 			},
 			"columnDelimiter": ",",
