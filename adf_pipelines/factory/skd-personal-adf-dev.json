@@ -1,0 +1,15 @@
+{
+	"name": "skd-personal-adf-dev",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "72b9acb1-3fb2-4a56-9a75-52b0549bc0db",
+		"tenantId": "802b9312-95f4-4240-865a-8bf00bcb60f3"
+	}
+}
