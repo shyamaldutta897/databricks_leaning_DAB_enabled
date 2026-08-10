@@ -54,37 +54,6 @@
 						"type": "DatasetReference"
 					}
 				]
-			},
-			{
-				"name": "CleanDataFromADLS",
-				"type": "ExecuteDataFlow",
-				"dependsOn": [
-					{
-						"activity": "copy from sql to adls",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"dataflow": {
-						"referenceName": "CleanDataFromADLS",
-						"type": "DataFlowReference"
-					},
-					"compute": {
-						"coreCount": 8,
-						"computeType": "General"
-					},
-					"traceLevel": "Fine"
-				}
 			}
 		],
 		"folder": {
