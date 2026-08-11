@@ -10,6 +10,7 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
+				"fileName": "customer_data",
 				"folderPath": "session2_copy_demo",
 				"fileSystem": "adfpipelines"
 			},
