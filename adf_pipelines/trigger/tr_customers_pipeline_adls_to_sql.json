@@ -1,0 +1,17 @@
+{
+	"name": "tr_customers_pipeline_adls_to_sql",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Minute",
+				"interval": 15,
+				"startTime": "2026-08-13T19:47:00",
+				"timeZone": "India Standard Time"
+			}
+		}
+	}
+}
