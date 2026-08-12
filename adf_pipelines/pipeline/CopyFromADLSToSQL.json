@@ -72,6 +72,18 @@
 						"value": "@and(activity('Check if the file exists and column count matches').output.exists, equals(activity('Check if the file exists and column count matches').output.columnCount,11))",
 						"type": "Expression"
 					},
+					"ifFalseActivities": [
+						{
+							"name": "If the condition fails",
+							"type": "Fail",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"message": "Data copy has failed, check source files.",
+								"errorCode": "666"
+							}
+						}
+					],
 					"ifTrueActivities": [
 						{
 							"name": "Copy from ADLS to SQL",
