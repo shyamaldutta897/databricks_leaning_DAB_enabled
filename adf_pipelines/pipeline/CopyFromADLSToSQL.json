@@ -168,6 +168,13 @@
 									"referenceName": "ds_customers_csv2",
 									"type": "DatasetReference"
 								},
+								"logStorageSettings": {
+									"linkedServiceName": {
+										"referenceName": "LS_adls",
+										"type": "LinkedServiceReference"
+									},
+									"path": "adfpipelines/delete_logs_adf"
+								},
 								"enableLogging": true,
 								"storeSettings": {
 									"type": "AzureBlobFSReadSettings",
