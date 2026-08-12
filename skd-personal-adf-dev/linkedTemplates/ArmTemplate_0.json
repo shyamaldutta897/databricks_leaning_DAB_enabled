@@ -1044,7 +1044,7 @@
 					"recurrence": {
 						"frequency": "Minute",
 						"interval": 15,
-						"startTime": "2026-08-14T20:15:00",
+						"startTime": "2026-08-12T20:45:00",
 						"timeZone": "India Standard Time"
 					}
 				}
