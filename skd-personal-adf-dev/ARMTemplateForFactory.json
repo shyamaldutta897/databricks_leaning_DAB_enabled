@@ -1022,6 +1022,36 @@
 				"[concat(variables('factoryId'), '/datasets/ds_customer_count_aggregated')]",
 				"[concat(variables('factoryId'), '/datasets/ds_customer_data_raw')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_customers_pipeline_adls_to_sql')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "CopyFromADLSToSQL",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Minute",
+						"interval": 15,
+						"startTime": "2026-08-13T19:47:00",
+						"timeZone": "India Standard Time"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/CopyFromADLSToSQL')]"
+			]
 		}
 	]
 }
