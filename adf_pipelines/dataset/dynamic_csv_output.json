@@ -10,7 +10,7 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"folderPath": "session3_interview_practice",
+				"folderPath": "session3_incremental_copy_from_sql_to_adls",
 				"fileSystem": "adfpipelines"
 			},
 			"columnDelimiter": ",",
