@@ -13,6 +13,667 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/2_Move_Multiple_Files_From_Source_To_Destination_Basic')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "This pipeline is about copying multiple files from a source using only one copy activity.\n\nSo as the base job of the pipeline is to copy files from one location to another, we'll be using a COPY activity. Then in that we'll have to create two datasets - source and sink.\n\nIn this example, the source is GitHub. Now, here we need to create a new LS based on an HTTP connection - where we need to provide the base URL. For that, we need to open the file in GitHub clicking on the 'raw' button and it will generate a link something like - https://raw.githubusercontent.com/shyamaldutta897/Datasets/refs/heads/main/retail_db/categories.csv.\n\nHere, the base URL value is - https://raw.githubusercontent.com\n\nSo, once we provide that the linked service will be created.\n\nNext is about the Source Dataset. Since LS is based on CSV files, it will have all settings of CSV file (e.g. - comma separated etc), plus there will be another field called relative path. This is specific to HTTP LS.\n\nNow, the relative path is - shyamaldutta897/Datasets/refs/heads/main/retail_db/categories.csv\n\nIf we look at the relative path, the file name (categories.csv) is a variable, remaining everything is constant. So we create a parameter for the relative path field and join it with the constant part of the path. It looks something like - contsant/path/@{dataset.parameter_name()}\n\nNext is sink dataset. Here the destination is ADLS and file type is same (CSV). When we create this dataset, it will ask us to enter the path like container/directory/file. We just need to provide the container name, remaining two elements will be parameters - folder_name, file_name. So once we do that, in the copy activity, under source we'll see a parameter called file name and under sink we'll see two parameters - folder_name,file_name.\n\nNext is about bringing in the iterator to pick files from a list and push it to the copy activity. For this we pick for each activity. We need to provide a list of items for this activity. Now this is where pipeline level parameter comes in. We create a parameter at pipeline level with array type and pass values like - [{\"name\":\"categories\"},{\"name\":\"customers\"},{\"name\":\"departments\"},{\"name\":\"order_items\"},{\"name\":\"orders\"}]\n\nOnce this part is done, push the copy activity inside the for each activity (cut and paste). Now, the parameters in source and sink will be provided with the input from the list that is being provided to For Each activity, the expression will look like - @{item().name}.csv - Here 'name' is nothing but the key that defines a filename in the array provided in the pipeline parameter. It is basically a variable, it can be anything like file_name, table_name etc.\n\nSame thing we need to do in sink as well - folder_name parameter is hardcoded in this pipeline, but we can make it parameterised as well. For file name we take the input from the same for each activity, similar to source dataset.\n\nOnce these settings are done, the pipeline can be debugged and it will copy the files from location a to location b.\n\nThings to note - If we provide the file_name parameter value as @{item().name}.csv, we don't need to provide the file names like categories.csv. Just categories is enough. Reason being, when the value is substituted to the expression @{item().name}.csv - it results in categories.csv.csv - which throws a 404 error.\n\nSimilar thing with the expression @{dataset.parameter_name()}. If we push it as @{dataset.parameter_name()}.csv - it first referes to the expression @{item().name}.csv - which is for example categories.csv. Then when this value is passed to @{dataset.parameter_name()}.csv, it becomes categories.csv.csv",
+				"activities": [
+					{
+						"name": "for each files present in a github folder",
+						"description": "To pick files from a given array in the form of a pipeline parameter. This can be automated using lookup if we store the values in a table.",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@pipeline().parameters.loop_value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "copy datasets from github",
+									"description": "Contains two datasets - \nSource - data sitting in github\nSink - Destination location in ADLS.\n\nBoth of these datasets get input from the exterior lookup activity, in the file_name parameter.",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "HttpReadSettings",
+												"requestMethod": "GET"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_copy_from_github_retail_db",
+											"type": "DatasetReference",
+											"parameters": {
+												"file_name": {
+													"value": "@{item().name}.csv",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_retail_db_data",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder_name": "retail_db",
+												"file_name": {
+													"value": "@{item().name}.csv",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"loop_value": {
+						"type": "array",
+						"defaultValue": [
+							{
+								"name": "categories"
+							},
+							{
+								"name": "customers"
+							},
+							{
+								"name": "departments"
+							},
+							{
+								"name": "order_items"
+							},
+							{
+								"name": "orders"
+							}
+						]
+					}
+				},
+				"folder": {
+					"name": "Interview_practice"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/3_ingest_multiple_files_using_meta_db_and_lookup')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "fetch ingest info from metadb",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ds_meta_db",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "fetch ingest info from metadb",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('fetch ingest info from metadb').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy from github to adls metadata based",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "HttpReadSettings",
+												"requestMethod": "GET"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_github_metadata_based",
+											"type": "DatasetReference",
+											"parameters": {
+												"file_path": {
+													"value": "@{item().source_file_path}.csv",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_retail_db_csv_metadata_based",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder_name": {
+													"value": "@{item().destination_file_path}",
+													"type": "Expression"
+												},
+												"file_name": {
+													"value": "@{last(split(item().source_file_path,'/'))}.csv",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "Interview_practice"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CopyFromADLSToSQL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Validate if the file exists",
+						"type": "Validation",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_customers_csv2",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"timeout": "0.00:01:00",
+							"sleep": 10
+						}
+					},
+					{
+						"name": "Check if the file exists and column count matches",
+						"type": "GetMetadata",
+						"dependsOn": [
+							{
+								"activity": "Validate if the file exists",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_customers_csv2",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"exists",
+								"columnCount",
+								"itemType"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "check if file exists and column count matches",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Check if the file exists and column count matches",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@and(activity('Check if the file exists and column count matches').output.exists, equals(activity('Check if the file exists and column count matches').output.columnCount,11))",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "If the condition fails",
+									"type": "Fail",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"message": "Data copy has failed, check source files.",
+										"errorCode": "666"
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "Copy from ADLS to SQL",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "AzureSqlSink",
+											"writeBehavior": "upsert",
+											"upsertSettings": {
+												"useTempDB": true,
+												"keys": [
+													"Customer Id"
+												]
+											},
+											"sqlWriterUseTableLock": false,
+											"disableMetricsCollection": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_customers_csv2",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_customers_upsert",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "Delete if copy is successful",
+									"type": "Delete",
+									"dependsOn": [
+										{
+											"activity": "Copy from ADLS to SQL",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "ds_customers_csv2",
+											"type": "DatasetReference",
+											"parameters": {}
+										},
+										"logStorageSettings": {
+											"linkedServiceName": {
+												"referenceName": "LS_adls",
+												"type": "LinkedServiceReference"
+											},
+											"path": "adfpipelines/delete_logs_adf"
+										},
+										"enableLogging": true,
+										"storeSettings": {
+											"type": "AzureBlobFSReadSettings",
+											"recursive": true,
+											"enablePartitionDiscovery": false
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "Session2 pipelines"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CopyFromSQLToADLS')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "copy from sql to adls",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "select * from dbo.employees",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_azure_sql_employees_table",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_employees_csv",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "Session1 pipelines"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CleanDataFromADLS')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ds_customers_csv",
+								"type": "DatasetReference"
+							},
+							"name": "adlscustomers"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ds_customer_count_aggregated",
+								"type": "DatasetReference"
+							},
+							"name": "customersaggregated"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_customer_data_raw",
+								"type": "DatasetReference"
+							},
+							"name": "customerrawdata"
+						}
+					],
+					"transformations": [
+						{
+							"name": "selectcolumns"
+						},
+						{
+							"name": "concatnames"
+						},
+						{
+							"name": "customercountbycountry"
+						},
+						{
+							"name": "keepfields"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Index as string,",
+						"          {Customer Id} as string,",
+						"          {First Name} as string,",
+						"          {Last Name} as string,",
+						"          Company as string,",
+						"          City as string,",
+						"          Country as string,",
+						"          {Phone 1} as string,",
+						"          {Phone 2} as string,",
+						"          Email as string,",
+						"          {Subscription Date} as string,",
+						"          Website as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     partitionBy('roundRobin', 2)) ~> adlscustomers",
+						"adlscustomers select(mapColumn(",
+						"          Index,",
+						"          {Customer Id},",
+						"          {First Name},",
+						"          {Last Name},",
+						"          Company,",
+						"          City,",
+						"          Country,",
+						"          {Phone 1},",
+						"          Email,",
+						"          {Subscription Date},",
+						"          Website",
+						"     ),",
+						"     partitionBy('roundRobin', 2),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> selectcolumns",
+						"selectcolumns derive({Full name} = concat({First Name},' ',{Last Name})) ~> concatnames",
+						"selectcolumns aggregate(groupBy(Country),",
+						"     {customer count} = count({Customer Id})) ~> customercountbycountry",
+						"concatnames select(mapColumn(",
+						"          Index,",
+						"          {Customer Id},",
+						"          {Full name},",
+						"          Company,",
+						"          City,",
+						"          Country,",
+						"          {Phone 1},",
+						"          Email,",
+						"          {Subscription Date},",
+						"          Website",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> keepfields",
+						"customercountbycountry sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> customersaggregated",
+						"keepfields sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          {Index     Customer Id     First Name     Last Name     Company     City     Country     Phone 1     Phone 2     Email     Subscription Date     Website} as string",
+						"     ),",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> customerrawdata"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/HttpToADLS')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -124,7 +785,9 @@
 				},
 				"annotations": []
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/CleanDataFromADLS')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/tr_customers_pipeline_adls_to_sql')]",
@@ -152,7 +815,9 @@
 					}
 				}
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/CopyFromADLSToSQL')]"
+			]
 		}
 	]
 }

@@ -11,6 +11,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'password' of 'LS_AzureSQL'"
 		},
+		"LS_AzureSQL_metadb_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_AzureSQL_metadb'"
+		},
 		"LS_adls_accountKey": {
 			"type": "secureString",
 			"metadata": "Secure string for 'accountKey' of 'LS_adls'"
@@ -24,6 +28,18 @@
 			"defaultValue": "skd_personal_sql_db"
 		},
 		"LS_AzureSQL_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sql_admin"
+		},
+		"LS_AzureSQL_metadb_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "skd-personal-sql.database.windows.net"
+		},
+		"LS_AzureSQL_metadb_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "meta_db"
+		},
+		"LS_AzureSQL_metadb_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "sql_admin"
 		},
@@ -69,6 +85,9 @@
 					"LS_AzureSQL_password": {
 						"value": "[parameters('LS_AzureSQL_password')]"
 					},
+					"LS_AzureSQL_metadb_password": {
+						"value": "[parameters('LS_AzureSQL_metadb_password')]"
+					},
 					"LS_adls_accountKey": {
 						"value": "[parameters('LS_adls_accountKey')]"
 					},
@@ -80,6 +99,15 @@
 					},
 					"LS_AzureSQL_properties_typeProperties_userName": {
 						"value": "[parameters('LS_AzureSQL_properties_typeProperties_userName')]"
+					},
+					"LS_AzureSQL_metadb_properties_typeProperties_server": {
+						"value": "[parameters('LS_AzureSQL_metadb_properties_typeProperties_server')]"
+					},
+					"LS_AzureSQL_metadb_properties_typeProperties_database": {
+						"value": "[parameters('LS_AzureSQL_metadb_properties_typeProperties_database')]"
+					},
+					"LS_AzureSQL_metadb_properties_typeProperties_userName": {
+						"value": "[parameters('LS_AzureSQL_metadb_properties_typeProperties_userName')]"
 					},
 					"LS_adls_properties_typeProperties_url": {
 						"value": "[parameters('LS_adls_properties_typeProperties_url')]"

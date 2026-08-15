@@ -8,6 +8,9 @@
 		"LS_AzureSQL_password": {
 			"value": ""
 		},
+		"LS_AzureSQL_metadb_password": {
+			"value": ""
+		},
 		"LS_adls_accountKey": {
 			"value": ""
 		},
@@ -18,6 +21,15 @@
 			"value": "skd_personal_sql_db"
 		},
 		"LS_AzureSQL_properties_typeProperties_userName": {
+			"value": "sql_admin"
+		},
+		"LS_AzureSQL_metadb_properties_typeProperties_server": {
+			"value": "skd-personal-sql.database.windows.net"
+		},
+		"LS_AzureSQL_metadb_properties_typeProperties_database": {
+			"value": "meta_db"
+		},
+		"LS_AzureSQL_metadb_properties_typeProperties_userName": {
 			"value": "sql_admin"
 		},
 		"LS_adls_properties_typeProperties_url": {
