@@ -92,7 +92,13 @@
 							"inputs": [
 								{
 									"referenceName": "ds_github_metadata_based",
-									"type": "DatasetReference"
+									"type": "DatasetReference",
+									"parameters": {
+										"file_path": {
+											"value": "@{item().source_file_path}.csv",
+											"type": "Expression"
+										}
+									}
 								}
 							],
 							"outputs": [
@@ -101,11 +107,11 @@
 									"type": "DatasetReference",
 									"parameters": {
 										"folder_name": {
-											"value": "@{item().destination_file_path}.csv",
+											"value": "@{item().destination_file_path}",
 											"type": "Expression"
 										},
 										"file_name": {
-											"value": "@last(split(item().source_file_path,'/'))",
+											"value": "@{last(split(item().source_file_path,'/'))}.csv",
 											"type": "Expression"
 										}
 									}
