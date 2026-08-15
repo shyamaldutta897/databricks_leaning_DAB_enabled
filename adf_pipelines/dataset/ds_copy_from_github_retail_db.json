@@ -1,0 +1,33 @@
+{
+	"name": "ds_copy_from_github_retail_db",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_http_github",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"folder_name": {
+				"type": "String"
+			},
+			"file_name": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "HttpServerLocation",
+				"relativeUrl": {
+					"value": "shyamaldutta897/Datasets/refs/heads/main/retail_db/@{dataset().file_name}.csv",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	}
+}
