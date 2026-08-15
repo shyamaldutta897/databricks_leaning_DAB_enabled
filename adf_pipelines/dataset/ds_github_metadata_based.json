@@ -1,0 +1,30 @@
+{
+	"name": "ds_github_metadata_based",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_http_github",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"file_path": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "HttpServerLocation",
+				"relativeUrl": {
+					"value": "/shyamaldutta897/Datasets/refs/heads/main/@{dataset().file_path}",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	}
+}
