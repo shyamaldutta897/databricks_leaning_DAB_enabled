@@ -1,0 +1,117 @@
+{
+	"name": "2_Move_Multiple_Files_From_Source_To_Destination_Basic",
+	"properties": {
+		"activities": [
+			{
+				"name": "for each files present in a github folder",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.loop_value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "copy datasets from github",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "HttpReadSettings",
+										"requestMethod": "GET"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_copy_from_github_retail_db",
+									"type": "DatasetReference",
+									"parameters": {
+										"file_name": {
+											"value": "@{item().name}.csv",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_retail_db_data",
+									"type": "DatasetReference",
+									"parameters": {
+										"folder_name": "retail_db",
+										"file_name": {
+											"value": "@{item().name}.csv",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"loop_value": {
+				"type": "array",
+				"defaultValue": [
+					{
+						"name": "categories"
+					},
+					{
+						"name": "customers"
+					},
+					{
+						"name": "departments"
+					},
+					{
+						"name": "order_items"
+					},
+					{
+						"name": "orders"
+					}
+				]
+			}
+		},
+		"folder": {
+			"name": "Interview_practice"
+		},
+		"annotations": []
+	}
+}

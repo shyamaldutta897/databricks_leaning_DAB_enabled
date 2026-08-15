@@ -1,11 +1,14 @@
 {
-	"name": "ds_copy_from_github_retail_db",
+	"name": "ds_retail_db_data",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "LS_http_github",
+			"referenceName": "LS_adls",
 			"type": "LinkedServiceReference"
 		},
 		"parameters": {
+			"folder_name": {
+				"type": "String"
+			},
 			"file_name": {
 				"type": "String"
 			}
@@ -14,11 +17,16 @@
 		"type": "DelimitedText",
 		"typeProperties": {
 			"location": {
-				"type": "HttpServerLocation",
-				"relativeUrl": {
-					"value": "shyamaldutta897/Datasets/refs/heads/main/retail_db/@{dataset().file_name}",
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().file_name",
 					"type": "Expression"
-				}
+				},
+				"folderPath": {
+					"value": "@dataset().folder_name",
+					"type": "Expression"
+				},
+				"fileSystem": "landing"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",
