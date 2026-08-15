@@ -1,0 +1,51 @@
+{
+	"name": "ds_meta_db",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AzureSQL_metadb",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "source_id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "is_table",
+				"type": "bit"
+			},
+			{
+				"name": "source_db",
+				"type": "varchar"
+			},
+			{
+				"name": "source_schema",
+				"type": "varchar"
+			},
+			{
+				"name": "table_name",
+				"type": "varchar"
+			},
+			{
+				"name": "source_file_path",
+				"type": "varchar"
+			},
+			{
+				"name": "destination_file_path",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "control_list"
+		}
+	}
+}
