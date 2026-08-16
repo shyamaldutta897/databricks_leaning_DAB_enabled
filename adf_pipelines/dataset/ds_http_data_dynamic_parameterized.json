@@ -15,7 +15,7 @@
 			"base_url_dataset": {
 				"type": "String"
 			},
-			"relative_url": {
+			"relative_url_dataset": {
 				"type": "String"
 			}
 		},
@@ -25,11 +25,12 @@
 			"location": {
 				"type": "HttpServerLocation",
 				"relativeUrl": {
-					"value": "@dataset().relative_url",
+					"value": "@dataset().relative_url_dataset",
 					"type": "Expression"
 				}
 			},
 			"columnDelimiter": ",",
+			"rowDelimiter": "\n",
 			"escapeChar": "\\",
 			"firstRowAsHeader": true,
 			"quoteChar": "\""
