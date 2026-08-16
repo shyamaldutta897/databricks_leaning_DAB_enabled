@@ -1,0 +1,138 @@
+{
+	"name": "3_ingest_multiple_files_using_meta_db_and_lookup_copy",
+	"properties": {
+		"activities": [
+			{
+				"name": "fetch ingest info from metadb",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ds_meta_db",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "fetch ingest info from metadb",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('fetch ingest info from metadb').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "copy data from multiple http sources",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "HttpReadSettings",
+										"requestMethod": "GET"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_http_data_dynamic_parameterized",
+									"type": "DatasetReference",
+									"parameters": {
+										"base_url_dataset": {
+											"value": "@{item().base_url}",
+											"type": "Expression"
+										},
+										"relative_url_dataset": {
+											"value": "@concat(item().relative_url,'.',item().file_extension)",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_adls_parameterized_dynamic",
+									"type": "DatasetReference",
+									"parameters": {
+										"destination_path": {
+											"value": "@{item().destination_file_path}",
+											"type": "Expression"
+										},
+										"file_name": {
+											"value": "@concat(item().name,'.',item().file_extension)",
+											"type": "Expression"
+										},
+										"file_system": {
+											"value": "@{item().file_system}",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "Session3 pipelines"
+		},
+		"annotations": []
+	}
+}

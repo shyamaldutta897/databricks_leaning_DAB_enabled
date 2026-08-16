@@ -11,6 +11,9 @@
 			},
 			"file_name": {
 				"type": "String"
+			},
+			"file_system": {
+				"type": "String"
 			}
 		},
 		"annotations": [],
@@ -26,7 +29,10 @@
 					"value": "@dataset().destination_path",
 					"type": "Expression"
 				},
-				"fileSystem": "adfpipelines"
+				"fileSystem": {
+					"value": "@dataset().file_system",
+					"type": "Expression"
+				}
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",
