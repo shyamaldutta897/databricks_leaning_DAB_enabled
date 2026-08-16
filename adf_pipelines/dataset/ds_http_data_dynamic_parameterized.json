@@ -1,0 +1,39 @@
+{
+	"name": "ds_http_data_dynamic_parameterized",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_http_dynamic_parameterized",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"base_url": {
+					"value": "@dataset().base_url_dataset",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"base_url_dataset": {
+				"type": "String"
+			},
+			"relative_url": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "HttpServerLocation",
+				"relativeUrl": {
+					"value": "@dataset().relative_url",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	}
+}
