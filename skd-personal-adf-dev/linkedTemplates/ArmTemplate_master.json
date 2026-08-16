@@ -53,7 +53,11 @@
 		},
 		"LS_http_github_properties_typeProperties_url": {
 			"type": "string",
-			"defaultValue": "https://raw.githubusercontent.com/"
+			"defaultValue": "@{linkedService().base_url}"
+		},
+		"ls_http_dynamic_parameterized_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "@{linkedService().base_url}"
 		},
 		"containerUri": {
 			"type": "string",
@@ -117,6 +121,9 @@
 					},
 					"LS_http_github_properties_typeProperties_url": {
 						"value": "[parameters('LS_http_github_properties_typeProperties_url')]"
+					},
+					"ls_http_dynamic_parameterized_properties_typeProperties_url": {
+						"value": "[parameters('ls_http_dynamic_parameterized_properties_typeProperties_url')]"
 					}
 				}
 			},

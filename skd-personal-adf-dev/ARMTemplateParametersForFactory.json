@@ -39,7 +39,10 @@
 			"value": "https://drive.google.com/uc?id=1zO8ekHWx9U7mrbx_0Hoxxu6od7uxJqWw&export=download"
 		},
 		"LS_http_github_properties_typeProperties_url": {
-			"value": "https://raw.githubusercontent.com/"
+			"value": "@{linkedService().base_url}"
+		},
+		"ls_http_dynamic_parameterized_properties_typeProperties_url": {
+			"value": "@{linkedService().base_url}"
 		}
 	}
 }
