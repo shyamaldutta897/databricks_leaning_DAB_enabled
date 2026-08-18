@@ -44,6 +44,7 @@
 						"value": "@activity('fetch ingest info from metadb').output.value",
 						"type": "Expression"
 					},
+					"isSequential": true,
 					"activities": [
 						{
 							"name": "copy data from multiple http sources",
