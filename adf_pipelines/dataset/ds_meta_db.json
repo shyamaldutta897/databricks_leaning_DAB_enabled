@@ -44,7 +44,7 @@
 			}
 		],
 		"typeProperties": {
-			"schema": "dbo",
+			"schema": "meta",
 			"table": "control_list"
 		}
 	}
