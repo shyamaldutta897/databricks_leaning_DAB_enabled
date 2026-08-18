@@ -11,14 +11,6 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'password' of 'LS_AzureSQL'"
 		},
-		"LS_AzureSQL_metadb_password": {
-			"type": "secureString",
-			"metadata": "Secure string for 'password' of 'LS_AzureSQL_metadb'"
-		},
-		"LS_adls_accountKey": {
-			"type": "secureString",
-			"metadata": "Secure string for 'accountKey' of 'LS_adls'"
-		},
 		"LS_AzureSQL_properties_typeProperties_server": {
 			"type": "string",
 			"defaultValue": "skd-personal-sql.database.windows.net"
@@ -37,7 +29,7 @@
 		},
 		"LS_AzureSQL_metadb_properties_typeProperties_database": {
 			"type": "string",
-			"defaultValue": "meta_db"
+			"defaultValue": "skd_personal_sql_db"
 		},
 		"LS_AzureSQL_metadb_properties_typeProperties_userName": {
 			"type": "string",
@@ -58,6 +50,10 @@
 		"ls_http_dynamic_parameterized_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "@{linkedService().base_url}"
+		},
+		"ls_kv_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://kvskdpersonal.vault.azure.net/"
 		}
 	},
 	"variables": {
@@ -519,6 +515,156 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/3_ingest_multiple_files_using_meta_db_and_lookup_copy')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "fetch ingest info from metadb",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ds_meta_db",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "fetch ingest info from metadb",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('fetch ingest info from metadb').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "copy data from multiple http sources",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "HttpReadSettings",
+												"requestMethod": "GET"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_http_data_dynamic_parameterized",
+											"type": "DatasetReference",
+											"parameters": {
+												"base_url_dataset": {
+													"value": "@{item().base_url}",
+													"type": "Expression"
+												},
+												"relative_url_dataset": {
+													"value": "@concat(item().relative_url,'.',item().file_extension)",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_adls_parameterized_dynamic",
+											"type": "DatasetReference",
+											"parameters": {
+												"destination_path": {
+													"value": "@{item().destination_file_path}",
+													"type": "Expression"
+												},
+												"file_name": {
+													"value": "@concat(item().name,'.',item().file_extension)",
+													"type": "Expression"
+												},
+												"file_system": {
+													"value": "@{item().file_system}",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "Session3 pipelines"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_meta_db')]",
+				"[concat(variables('factoryId'), '/datasets/ds_http_data_dynamic_parameterized')]",
+				"[concat(variables('factoryId'), '/datasets/ds_adls_parameterized_dynamic')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/CopyFromADLSToSQL')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -919,6 +1065,96 @@
 				"[concat(variables('factoryId'), '/datasets/ds_http_csv_customers_100')]",
 				"[concat(variables('factoryId'), '/datasets/ds_customers_csv')]",
 				"[concat(variables('factoryId'), '/dataflows/CleanDataFromADLS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_adls_parameterized_dynamic')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_adls",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"destination_path": {
+						"type": "String"
+					},
+					"file_name": {
+						"type": "String"
+					},
+					"file_system": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().file_name",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().destination_path",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().file_system",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Index",
+						"type": "String"
+					},
+					{
+						"name": "Customer Id",
+						"type": "String"
+					},
+					{
+						"name": "Full name",
+						"type": "String"
+					},
+					{
+						"name": "Company",
+						"type": "String"
+					},
+					{
+						"name": "City",
+						"type": "String"
+					},
+					{
+						"name": "Country",
+						"type": "String"
+					},
+					{
+						"name": "Phone 1",
+						"type": "String"
+					},
+					{
+						"name": "Email",
+						"type": "String"
+					},
+					{
+						"name": "Subscription Date",
+						"type": "String"
+					},
+					{
+						"name": "Website",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
 			]
 		},
 		{
@@ -1395,6 +1631,51 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/ds_http_data_dynamic_parameterized')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_http_dynamic_parameterized",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"base_url": {
+							"value": "@dataset().base_url_dataset",
+							"type": "Expression"
+						}
+					}
+				},
+				"parameters": {
+					"base_url_dataset": {
+						"type": "String"
+					},
+					"relative_url_dataset": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "HttpServerLocation",
+						"relativeUrl": {
+							"value": "@dataset().relative_url_dataset",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"rowDelimiter": "\n",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_http_dynamic_parameterized')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/ds_meta_db')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -1442,7 +1723,7 @@
 					}
 				],
 				"typeProperties": {
-					"schema": "dbo",
+					"schema": "meta",
 					"table": "control_list"
 				}
 			},
@@ -1655,12 +1936,18 @@
 					"authenticationType": "SQL",
 					"userName": "[parameters('LS_AzureSQL_metadb_properties_typeProperties_userName')]",
 					"password": {
-						"type": "SecureString",
-						"value": "[parameters('LS_AzureSQL_metadb_password')]"
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "ls_kv",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "sql-user-password"
 					}
 				}
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_kv')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/LS_adls')]",
@@ -1672,12 +1959,18 @@
 				"typeProperties": {
 					"url": "[parameters('LS_adls_properties_typeProperties_url')]",
 					"accountKey": {
-						"type": "SecureString",
-						"value": "[parameters('LS_adls_accountKey')]"
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "ls_kv",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "adls-key"
 					}
 				}
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_kv')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/LS_http')]",
@@ -1708,6 +2001,26 @@
 				"type": "HttpServer",
 				"typeProperties": {
 					"url": "[parameters('LS_http_github_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_http_dynamic_parameterized')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"base_url": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "HttpServer",
+				"typeProperties": {
+					"url": "[parameters('ls_http_dynamic_parameterized_properties_typeProperties_url')]",
 					"enableServerCertificateValidation": true,
 					"authenticationType": "Anonymous"
 				}
@@ -1869,308 +2182,17 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/3_ingest_multiple_files_using_meta_db_and_lookup_copy')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "fetch ingest info from metadb",
-						"type": "Lookup",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "AzureSqlSource",
-								"queryTimeout": "02:00:00",
-								"partitionOption": "None"
-							},
-							"dataset": {
-								"referenceName": "ds_meta_db",
-								"type": "DatasetReference",
-								"parameters": {}
-							},
-							"firstRowOnly": false
-						}
-					},
-					{
-						"name": "ForEach1",
-						"type": "ForEach",
-						"dependsOn": [
-							{
-								"activity": "fetch ingest info from metadb",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"userProperties": [],
-						"typeProperties": {
-							"items": {
-								"value": "@activity('fetch ingest info from metadb').output.value",
-								"type": "Expression"
-							},
-							"activities": [
-								{
-									"name": "copy data from multiple http sources",
-									"type": "Copy",
-									"dependsOn": [],
-									"policy": {
-										"timeout": "0.12:00:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"source": {
-											"type": "DelimitedTextSource",
-											"storeSettings": {
-												"type": "HttpReadSettings",
-												"requestMethod": "GET"
-											},
-											"formatSettings": {
-												"type": "DelimitedTextReadSettings"
-											}
-										},
-										"sink": {
-											"type": "DelimitedTextSink",
-											"storeSettings": {
-												"type": "AzureBlobFSWriteSettings"
-											},
-											"formatSettings": {
-												"type": "DelimitedTextWriteSettings",
-												"quoteAllText": true,
-												"fileExtension": ".txt"
-											}
-										},
-										"enableStaging": false,
-										"translator": {
-											"type": "TabularTranslator",
-											"typeConversion": true,
-											"typeConversionSettings": {
-												"allowDataTruncation": true,
-												"treatBooleanAsNumber": false
-											}
-										}
-									},
-									"inputs": [
-										{
-											"referenceName": "ds_http_data_dynamic_parameterized",
-											"type": "DatasetReference",
-											"parameters": {
-												"base_url_dataset": {
-													"value": "@{item().base_url}",
-													"type": "Expression"
-												},
-												"relative_url_dataset": {
-													"value": "@concat(item().relative_url,'.',item().file_extension)",
-													"type": "Expression"
-												}
-											}
-										}
-									],
-									"outputs": [
-										{
-											"referenceName": "ds_adls_parameterized_dynamic",
-											"type": "DatasetReference",
-											"parameters": {
-												"destination_path": {
-													"value": "@{item().destination_file_path}",
-													"type": "Expression"
-												},
-												"file_name": {
-													"value": "@concat(item().name,'.',item().file_extension)",
-													"type": "Expression"
-												},
-												"file_system": {
-													"value": "@{item().file_system}",
-													"type": "Expression"
-												}
-											}
-										}
-									]
-								}
-							]
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"folder": {
-					"name": "Session3 pipelines"
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/ds_meta_db')]",
-				"[concat(variables('factoryId'), '/datasets/ds_http_data_dynamic_parameterized')]",
-				"[concat(variables('factoryId'), '/datasets/ds_adls_parameterized_dynamic')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/ls_http_dynamic_parameterized')]",
+			"name": "[concat(parameters('factoryName'), '/ls_kv')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"parameters": {
-					"base_url": {
-						"type": "String"
-					}
-				},
 				"annotations": [],
-				"type": "HttpServer",
+				"type": "AzureKeyVault",
 				"typeProperties": {
-					"url": "[parameters('ls_http_dynamic_parameterized_properties_typeProperties_url')]",
-					"enableServerCertificateValidation": true,
-					"authenticationType": "Anonymous"
+					"baseUrl": "[parameters('ls_kv_properties_typeProperties_baseUrl')]"
 				}
 			},
 			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/ds_http_data_dynamic_parameterized')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "ls_http_dynamic_parameterized",
-					"type": "LinkedServiceReference",
-					"parameters": {
-						"base_url": {
-							"value": "@dataset().base_url_dataset",
-							"type": "Expression"
-						}
-					}
-				},
-				"parameters": {
-					"base_url_dataset": {
-						"type": "String"
-					},
-					"relative_url_dataset": {
-						"type": "String"
-					}
-				},
-				"annotations": [],
-				"type": "DelimitedText",
-				"typeProperties": {
-					"location": {
-						"type": "HttpServerLocation",
-						"relativeUrl": {
-							"value": "@dataset().relative_url_dataset",
-							"type": "Expression"
-						}
-					},
-					"columnDelimiter": ",",
-					"rowDelimiter": "\n",
-					"escapeChar": "\\",
-					"firstRowAsHeader": true,
-					"quoteChar": "\""
-				},
-				"schema": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/ls_http_dynamic_parameterized')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/ds_adls_parameterized_dynamic')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "LS_adls",
-					"type": "LinkedServiceReference"
-				},
-				"parameters": {
-					"destination_path": {
-						"type": "String"
-					},
-					"file_name": {
-						"type": "String"
-					},
-					"file_system": {
-						"type": "String"
-					}
-				},
-				"annotations": [],
-				"type": "DelimitedText",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobFSLocation",
-						"fileName": {
-							"value": "@dataset().file_name",
-							"type": "Expression"
-						},
-						"folderPath": {
-							"value": "@dataset().destination_path",
-							"type": "Expression"
-						},
-						"fileSystem": {
-							"value": "@dataset().file_system",
-							"type": "Expression"
-						}
-					},
-					"columnDelimiter": ",",
-					"escapeChar": "\\",
-					"firstRowAsHeader": true,
-					"quoteChar": "\""
-				},
-				"schema": [
-					{
-						"name": "Index",
-						"type": "String"
-					},
-					{
-						"name": "Customer Id",
-						"type": "String"
-					},
-					{
-						"name": "Full name",
-						"type": "String"
-					},
-					{
-						"name": "Company",
-						"type": "String"
-					},
-					{
-						"name": "City",
-						"type": "String"
-					},
-					{
-						"name": "Country",
-						"type": "String"
-					},
-					{
-						"name": "Phone 1",
-						"type": "String"
-					},
-					{
-						"name": "Email",
-						"type": "String"
-					},
-					{
-						"name": "Subscription Date",
-						"type": "String"
-					},
-					{
-						"name": "Website",
-						"type": "String"
-					}
-				]
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
-			]
 		}
 	]
 }

@@ -8,12 +8,6 @@
 		"LS_AzureSQL_password": {
 			"value": ""
 		},
-		"LS_AzureSQL_metadb_password": {
-			"value": ""
-		},
-		"LS_adls_accountKey": {
-			"value": ""
-		},
 		"LS_AzureSQL_properties_typeProperties_server": {
 			"value": "skd-personal-sql.database.windows.net"
 		},
@@ -27,7 +21,7 @@
 			"value": "skd-personal-sql.database.windows.net"
 		},
 		"LS_AzureSQL_metadb_properties_typeProperties_database": {
-			"value": "meta_db"
+			"value": "skd_personal_sql_db"
 		},
 		"LS_AzureSQL_metadb_properties_typeProperties_userName": {
 			"value": "sql_admin"
@@ -43,6 +37,9 @@
 		},
 		"ls_http_dynamic_parameterized_properties_typeProperties_url": {
 			"value": "@{linkedService().base_url}"
+		},
+		"ls_kv_properties_typeProperties_baseUrl": {
+			"value": "https://kvskdpersonal.vault.azure.net/"
 		},
 		"containerUri": {
 			"value": ""

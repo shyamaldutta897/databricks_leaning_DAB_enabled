@@ -11,14 +11,6 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'password' of 'LS_AzureSQL'"
 		},
-		"LS_AzureSQL_metadb_password": {
-			"type": "secureString",
-			"metadata": "Secure string for 'password' of 'LS_AzureSQL_metadb'"
-		},
-		"LS_adls_accountKey": {
-			"type": "secureString",
-			"metadata": "Secure string for 'accountKey' of 'LS_adls'"
-		},
 		"LS_AzureSQL_properties_typeProperties_server": {
 			"type": "string",
 			"defaultValue": "skd-personal-sql.database.windows.net"
@@ -37,7 +29,7 @@
 		},
 		"LS_AzureSQL_metadb_properties_typeProperties_database": {
 			"type": "string",
-			"defaultValue": "meta_db"
+			"defaultValue": "skd_personal_sql_db"
 		},
 		"LS_AzureSQL_metadb_properties_typeProperties_userName": {
 			"type": "string",
@@ -58,6 +50,10 @@
 		"ls_http_dynamic_parameterized_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "@{linkedService().base_url}"
+		},
+		"ls_kv_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://kvskdpersonal.vault.azure.net/"
 		},
 		"containerUri": {
 			"type": "string",
@@ -89,12 +85,6 @@
 					"LS_AzureSQL_password": {
 						"value": "[parameters('LS_AzureSQL_password')]"
 					},
-					"LS_AzureSQL_metadb_password": {
-						"value": "[parameters('LS_AzureSQL_metadb_password')]"
-					},
-					"LS_adls_accountKey": {
-						"value": "[parameters('LS_adls_accountKey')]"
-					},
 					"LS_AzureSQL_properties_typeProperties_server": {
 						"value": "[parameters('LS_AzureSQL_properties_typeProperties_server')]"
 					},
@@ -103,6 +93,18 @@
 					},
 					"LS_AzureSQL_properties_typeProperties_userName": {
 						"value": "[parameters('LS_AzureSQL_properties_typeProperties_userName')]"
+					},
+					"LS_http_properties_typeProperties_url": {
+						"value": "[parameters('LS_http_properties_typeProperties_url')]"
+					},
+					"LS_http_github_properties_typeProperties_url": {
+						"value": "[parameters('LS_http_github_properties_typeProperties_url')]"
+					},
+					"ls_http_dynamic_parameterized_properties_typeProperties_url": {
+						"value": "[parameters('ls_http_dynamic_parameterized_properties_typeProperties_url')]"
+					},
+					"ls_kv_properties_typeProperties_baseUrl": {
+						"value": "[parameters('ls_kv_properties_typeProperties_baseUrl')]"
 					},
 					"LS_AzureSQL_metadb_properties_typeProperties_server": {
 						"value": "[parameters('LS_AzureSQL_metadb_properties_typeProperties_server')]"
@@ -115,15 +117,6 @@
 					},
 					"LS_adls_properties_typeProperties_url": {
 						"value": "[parameters('LS_adls_properties_typeProperties_url')]"
-					},
-					"LS_http_properties_typeProperties_url": {
-						"value": "[parameters('LS_http_properties_typeProperties_url')]"
-					},
-					"LS_http_github_properties_typeProperties_url": {
-						"value": "[parameters('LS_http_github_properties_typeProperties_url')]"
-					},
-					"ls_http_dynamic_parameterized_properties_typeProperties_url": {
-						"value": "[parameters('ls_http_dynamic_parameterized_properties_typeProperties_url')]"
 					}
 				}
 			},
