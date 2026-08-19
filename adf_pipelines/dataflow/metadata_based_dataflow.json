@@ -27,7 +27,7 @@
 				"     ignoreNoFilesFound: false) ~> dynamicsourceformultipledatastreams",
 				"dynamicsourceformultipledatastreams split($df_entity_name=='orders',",
 				"     $df_entity_name=='order_items',",
-				"     disjoint: false) ~> pickastream@(orders, order_items, )"
+				"     disjoint: false) ~> pickastream@(orders, orderitems, wrong)"
 			]
 		}
 	}
