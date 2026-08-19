@@ -1,0 +1,101 @@
+{
+	"name": "4_dataflow_ingest_multiple_files_using_meta_db_and_lookup",
+	"properties": {
+		"activities": [
+			{
+				"name": "fetch ingest info from metadb",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select * from dbo.control_list where id in (9,10)",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ds_meta_db",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "fetch ingest info from metadb",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('fetch ingest info from metadb').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Data flow1",
+							"type": "ExecuteDataFlow",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataflow": {
+									"referenceName": "metadata_based_dataflow",
+									"type": "DataFlowReference",
+									"parameters": {
+										"df_entity_name": {
+											"value": "'@{item().name()}'",
+											"type": "Expression"
+										}
+									},
+									"datasetParameters": {
+										"dynamicsourceformultipledatastreams": {
+											"base_url_dataset": {
+												"value": "@item().base_url",
+												"type": "Expression"
+											},
+											"relative_url_dataset": {
+												"value": "@item().relative_url",
+												"type": "Expression"
+											}
+										}
+									}
+								},
+								"compute": {
+									"coreCount": 8,
+									"computeType": "General"
+								},
+								"traceLevel": "Fine"
+							}
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "Session4 pipelines"
+		},
+		"annotations": []
+	}
+}
