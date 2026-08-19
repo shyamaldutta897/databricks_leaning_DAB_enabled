@@ -1,0 +1,34 @@
+{
+	"name": "metadata_based_dataflow",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_http_data_dynamic_parameterized",
+						"type": "DatasetReference"
+					},
+					"name": "dynamicsourceformultipledatastreams"
+				}
+			],
+			"sinks": [],
+			"transformations": [
+				{
+					"name": "pickastream"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     df_entity_name as string",
+				"}",
+				"source(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> dynamicsourceformultipledatastreams",
+				"dynamicsourceformultipledatastreams split($df_entity_name=='orders',",
+				"     $df_entity_name=='order_items',",
+				"     disjoint: false) ~> pickastream@(orders, order_items, )"
+			]
+		}
+	}
+}
