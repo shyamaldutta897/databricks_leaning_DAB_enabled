@@ -1,6 +1,7 @@
 {
 	"name": "4_switch_usecase_with_get_metadata",
 	"properties": {
+		"description": "use get metadata and switch activity to copy different files to differnt folders based on predefined logics.",
 		"activities": [
 			{
 				"name": "Get all files from the specified folder",
