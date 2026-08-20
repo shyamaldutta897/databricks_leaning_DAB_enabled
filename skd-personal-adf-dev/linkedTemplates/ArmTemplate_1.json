@@ -6,6 +6,10 @@
 			"type": "string",
 			"metadata": "Data Factory name",
 			"defaultValue": "skd-personal-adf-dev"
+		},
+		"even_based_trigger_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/b37c5837-6d42-4738-813a-1005384a93fb/resourceGroups/rg_skd_personal_centralind/providers/Microsoft.Storage/storageAccounts/stgsdpersonaldev"
 		}
 	},
 	"variables": {
@@ -1168,6 +1172,244 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/metadata_based_dataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ds_adls_parameterized_dynamic",
+								"type": "DatasetReference"
+							},
+							"name": "dynamicsourceformultipledatastreams"
+						}
+					],
+					"sinks": [
+						{
+							"name": "sink1"
+						},
+						{
+							"name": "sink2"
+						},
+						{
+							"name": "sink3"
+						}
+					],
+					"transformations": [
+						{
+							"name": "split1"
+						},
+						{
+							"name": "aggregate1"
+						},
+						{
+							"name": "join1"
+						},
+						{
+							"name": "split2"
+						},
+						{
+							"name": "select1"
+						},
+						{
+							"name": "select2"
+						},
+						{
+							"name": "select3"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          order_id as string,",
+						"          order_date as string,",
+						"          customer_id as string,",
+						"          order_status as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     rowUrlColumn: ('source_file_name')) ~> dynamicsourceformultipledatastreams",
+						"dynamicsourceformultipledatastreams split(instr(byName('source_file_name'),'orders.csv')>0,",
+						"     instr(byName('source_file_name'),'order_items.csv')>0,",
+						"     disjoint: false) ~> split1@(orders, orderitems, invalid)",
+						"split1@orderitems aggregate(groupBy(order_id = toString(byName('order_id'))),",
+						"     total_amount = sum(toDecimal(byName('total_amount')))) ~> aggregate1",
+						"split1@orders, aggregate1 join(split1@orders@order_id == aggregate1@order_id,",
+						"     joinType:'outer',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join1",
+						"join1 split(total_amount>=500,",
+						"     total_amount<500,",
+						"     disjoint: false) ~> split2@(morethan500, lessthan500, nomatch)",
+						"split2@morethan500 select(mapColumn(",
+						"          order_id = split2@morethan500@order_id,",
+						"          order_date,",
+						"          customer_id,",
+						"          order_status,",
+						"          total_amount",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"split2@lessthan500 select(mapColumn(",
+						"          order_id = split2@lessthan500@order_id,",
+						"          order_date,",
+						"          customer_id,",
+						"          order_status,",
+						"          total_amount",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"split2@nomatch select(mapColumn(",
+						"          order_id = split2@nomatch@order_id,",
+						"          order_date,",
+						"          customer_id,",
+						"          order_status,",
+						"          total_amount",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select3",
+						"select1 sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> sink1",
+						"select2 sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> sink2",
+						"select3 sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> sink3"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/4_dataflow_ingest_multiple_files_using_meta_db_and_lookup')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "fetch ingest info from metadb",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "select * from [meta].[control_list] where id in (9,10)",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ds_meta_db",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "fetch ingest info from metadb",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('fetch ingest info from metadb').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "Data flow1",
+									"type": "ExecuteDataFlow",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataflow": {
+											"referenceName": "metadata_based_dataflow",
+											"type": "DataFlowReference",
+											"parameters": {},
+											"datasetParameters": {
+												"dynamicsourceformultipledatastreams": {
+													"destination_path": {
+														"value": "@item().destination_file_path",
+														"type": "Expression"
+													},
+													"file_name": "@concat(item().name,'.',item().file_extension)",
+													"file_system": {
+														"value": "@item().file_system",
+														"type": "Expression"
+													}
+												},
+												"sink1": {},
+												"sink2": {},
+												"sink3": {}
+											},
+											"linkedServiceParameters": {}
+										},
+										"staging": {},
+										"compute": {
+											"coreCount": 8,
+											"computeType": "General"
+										},
+										"traceLevel": "Fine"
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "Session4 pipelines"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/metadata_based_dataflow')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/HttpToADLS')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -1311,6 +1553,36 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/CopyFromADLSToSQL')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/even_based_trigger')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "3_ingest_multiple_files_using_meta_db_and_lookup_copy",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/landing/blobs/",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('even_based_trigger_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/3_ingest_multiple_files_using_meta_db_and_lookup_copy')]"
 			]
 		}
 	]

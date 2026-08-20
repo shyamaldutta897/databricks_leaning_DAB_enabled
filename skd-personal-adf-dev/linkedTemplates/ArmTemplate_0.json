@@ -513,43 +513,19 @@
 				},
 				"schema": [
 					{
-						"name": "Index",
+						"name": "order_id",
 						"type": "String"
 					},
 					{
-						"name": "Customer Id",
+						"name": "order_date",
 						"type": "String"
 					},
 					{
-						"name": "Full name",
+						"name": "customer_id",
 						"type": "String"
 					},
 					{
-						"name": "Company",
-						"type": "String"
-					},
-					{
-						"name": "City",
-						"type": "String"
-					},
-					{
-						"name": "Country",
-						"type": "String"
-					},
-					{
-						"name": "Phone 1",
-						"type": "String"
-					},
-					{
-						"name": "Email",
-						"type": "String"
-					},
-					{
-						"name": "Subscription Date",
-						"type": "String"
-					},
-					{
-						"name": "Website",
+						"name": "order_status",
 						"type": "String"
 					}
 				]

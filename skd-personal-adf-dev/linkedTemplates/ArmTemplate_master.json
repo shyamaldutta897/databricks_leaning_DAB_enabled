@@ -55,6 +55,10 @@
 			"type": "string",
 			"defaultValue": "https://kvskdpersonal.vault.azure.net/"
 		},
+		"even_based_trigger_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/b37c5837-6d42-4738-813a-1005384a93fb/resourceGroups/rg_skd_personal_centralind/providers/Microsoft.Storage/storageAccounts/stgsdpersonaldev"
+		},
 		"containerUri": {
 			"type": "string",
 			"metadata": "URI to storage account containing linked ARM templates"
@@ -135,6 +139,9 @@
 				"parameters": {
 					"factoryName": {
 						"value": "[parameters('factoryName')]"
+					},
+					"even_based_trigger_properties_typeProperties_scope": {
+						"value": "[parameters('even_based_trigger_properties_typeProperties_scope')]"
 					}
 				}
 			},
