@@ -6,7 +6,7 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "ds_http_data_dynamic_parameterized",
+						"referenceName": "ds_adls_parameterized_dynamic",
 						"type": "DatasetReference"
 					},
 					"name": "dynamicsourceformultipledatastreams"
@@ -15,19 +15,25 @@
 			"sinks": [],
 			"transformations": [
 				{
-					"name": "pickastream"
+					"name": "split1"
 				}
 			],
 			"scriptLines": [
 				"parameters{",
 				"     df_entity_name as string",
 				"}",
-				"source(allowSchemaDrift: true,",
+				"source(output(",
+				"          order_id as integer,",
+				"          order_date as string,",
+				"          customer_id as integer,",
+				"          order_status as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false) ~> dynamicsourceformultipledatastreams",
 				"dynamicsourceformultipledatastreams split($df_entity_name=='orders',",
 				"     $df_entity_name=='order_items',",
-				"     disjoint: false) ~> pickastream@(orders, orderitems, wrong)"
+				"     disjoint: false) ~> split1@(orders, order_items, invalid)"
 			]
 		}
 	}
