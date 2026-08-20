@@ -17,7 +17,6 @@
 				"typeProperties": {
 					"source": {
 						"type": "AzureSqlSource",
-						"sqlReaderQuery": "select * from dbo.control_list where id in (9,10)",
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},
@@ -63,20 +62,15 @@
 								"dataflow": {
 									"referenceName": "metadata_based_dataflow",
 									"type": "DataFlowReference",
-									"parameters": {
-										"df_entity_name": {
-											"value": "'@{item().name()}'",
-											"type": "Expression"
-										}
-									},
 									"datasetParameters": {
 										"dynamicsourceformultipledatastreams": {
-											"base_url_dataset": {
-												"value": "@item().base_url",
+											"destination_path": {
+												"value": "@item().destination_path",
 												"type": "Expression"
 											},
-											"relative_url_dataset": {
-												"value": "@item().relative_url",
+											"file_name": "@concat(item().name,'.',item().file_extension)",
+											"file_system": {
+												"value": "@item().file_system",
 												"type": "Expression"
 											}
 										}

@@ -19,21 +19,19 @@
 				}
 			],
 			"scriptLines": [
-				"parameters{",
-				"     df_entity_name as string",
-				"}",
 				"source(output(",
-				"          order_id as integer,",
+				"          order_id as string,",
 				"          order_date as string,",
-				"          customer_id as integer,",
+				"          customer_id as string,",
 				"          order_status as string",
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
-				"     ignoreNoFilesFound: false) ~> dynamicsourceformultipledatastreams",
-				"dynamicsourceformultipledatastreams split($df_entity_name=='orders',",
-				"     $df_entity_name=='order_items',",
-				"     disjoint: false) ~> split1@(orders, order_items, invalid)"
+				"     ignoreNoFilesFound: false,",
+				"     rowUrlColumn: ('source_file_name')) ~> dynamicsourceformultipledatastreams",
+				"dynamicsourceformultipledatastreams split(instr('source_file_name','orders.csv')>0,",
+				"     instr('source_file_name','order_items.csv')>0,",
+				"     disjoint: false) ~> split1@(orders, orderitems, invalid)"
 			]
 		}
 	}
