@@ -17,6 +17,7 @@
 				"typeProperties": {
 					"source": {
 						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select * from [meta].[control_list] where id in (9,10)",
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},
@@ -65,7 +66,7 @@
 									"datasetParameters": {
 										"dynamicsourceformultipledatastreams": {
 											"destination_path": {
-												"value": "@item().destination_path",
+												"value": "@item().destination_file_path",
 												"type": "Expression"
 											},
 											"file_name": "@concat(item().name,'.',item().file_extension)",
