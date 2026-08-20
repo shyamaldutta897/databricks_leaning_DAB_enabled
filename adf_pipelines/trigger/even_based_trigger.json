@@ -1,0 +1,24 @@
+{
+	"name": "even_based_trigger",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "3_ingest_multiple_files_using_meta_db_and_lookup_copy",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/landing/blobs/",
+			"ignoreEmptyBlobs": true,
+			"scope": "/subscriptions/b37c5837-6d42-4738-813a-1005384a93fb/resourceGroups/rg_skd_personal_centralind/providers/Microsoft.Storage/storageAccounts/stgsdpersonaldev",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}
