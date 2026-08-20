@@ -2444,6 +2444,335 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/3_ingest_multiple_files_using_meta_db_and_lookup_copy')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_adls_only_folder_param')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_adls",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"file_system": {
+						"type": "String"
+					},
+					"folder_path": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().folder_path",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().file_system",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/4_switch_usecase_with_get_metadata')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "use get metadata and switch activity to copy different files to differnt folders based on predefined logics.",
+				"activities": [
+					{
+						"name": "Get all files from the specified folder",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_adls_only_folder_param",
+								"type": "DatasetReference",
+								"parameters": {
+									"file_system": {
+										"value": "@pipeline().parameters.file_system",
+										"type": "Expression"
+									},
+									"folder_path": {
+										"value": "@pipeline().parameters.folder_name",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "Loop over the list of files from get metadata output",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get all files from the specified folder",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get all files from the specified folder').output.childItems",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "Switch1",
+									"type": "Switch",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"on": {
+											"value": "@if(contains(item().name,'product'),'PRODUCT_MATCH',\r\nif(contains(item().name,'order'),'ORDER_MATCH','DEFAULT_MATCH'))",
+											"type": "Expression"
+										},
+										"cases": [
+											{
+												"value": "PRODUCT_MATCH",
+												"activities": [
+													{
+														"name": "copy_products",
+														"type": "Copy",
+														"dependsOn": [],
+														"policy": {
+															"timeout": "0.12:00:00",
+															"retry": 0,
+															"retryIntervalInSeconds": 30,
+															"secureOutput": false,
+															"secureInput": false
+														},
+														"userProperties": [],
+														"typeProperties": {
+															"source": {
+																"type": "DelimitedTextSource",
+																"storeSettings": {
+																	"type": "AzureBlobFSReadSettings",
+																	"recursive": true,
+																	"enablePartitionDiscovery": false
+																},
+																"formatSettings": {
+																	"type": "DelimitedTextReadSettings"
+																}
+															},
+															"sink": {
+																"type": "DelimitedTextSink",
+																"storeSettings": {
+																	"type": "AzureBlobFSWriteSettings"
+																},
+																"formatSettings": {
+																	"type": "DelimitedTextWriteSettings",
+																	"quoteAllText": true,
+																	"fileExtension": ".txt"
+																}
+															},
+															"enableStaging": false,
+															"translator": {
+																"type": "TabularTranslator",
+																"typeConversion": true,
+																"typeConversionSettings": {
+																	"allowDataTruncation": true,
+																	"treatBooleanAsNumber": false
+																}
+															}
+														},
+														"inputs": [
+															{
+																"referenceName": "ds_adls_parameterized_dynamic",
+																"type": "DatasetReference",
+																"parameters": {
+																	"destination_path": {
+																		"value": "@pipeline().parameters.folder_name",
+																		"type": "Expression"
+																	},
+																	"file_name": {
+																		"value": "@item().name",
+																		"type": "Expression"
+																	},
+																	"file_system": {
+																		"value": "@pipeline().parameters.file_system",
+																		"type": "Expression"
+																	}
+																}
+															}
+														],
+														"outputs": [
+															{
+																"referenceName": "ds_adls_parameterized_dynamic",
+																"type": "DatasetReference",
+																"parameters": {
+																	"destination_path": {
+																		"value": "products_data",
+																		"type": "Expression"
+																	},
+																	"file_name": {
+																		"value": "@item().name",
+																		"type": "Expression"
+																	},
+																	"file_system": {
+																		"value": "@pipeline().parameters.file_system",
+																		"type": "Expression"
+																	}
+																}
+															}
+														]
+													}
+												]
+											},
+											{
+												"value": "ORDER_MATCH",
+												"activities": [
+													{
+														"name": "Copy orders data",
+														"type": "Copy",
+														"dependsOn": [],
+														"policy": {
+															"timeout": "0.12:00:00",
+															"retry": 0,
+															"retryIntervalInSeconds": 30,
+															"secureOutput": false,
+															"secureInput": false
+														},
+														"userProperties": [],
+														"typeProperties": {
+															"source": {
+																"type": "DelimitedTextSource",
+																"storeSettings": {
+																	"type": "AzureBlobFSReadSettings",
+																	"recursive": true,
+																	"enablePartitionDiscovery": false
+																},
+																"formatSettings": {
+																	"type": "DelimitedTextReadSettings"
+																}
+															},
+															"sink": {
+																"type": "DelimitedTextSink",
+																"storeSettings": {
+																	"type": "AzureBlobFSWriteSettings"
+																},
+																"formatSettings": {
+																	"type": "DelimitedTextWriteSettings",
+																	"quoteAllText": true,
+																	"fileExtension": ".txt"
+																}
+															},
+															"enableStaging": false,
+															"translator": {
+																"type": "TabularTranslator",
+																"typeConversion": true,
+																"typeConversionSettings": {
+																	"allowDataTruncation": true,
+																	"treatBooleanAsNumber": false
+																}
+															}
+														},
+														"inputs": [
+															{
+																"referenceName": "ds_adls_parameterized_dynamic",
+																"type": "DatasetReference",
+																"parameters": {
+																	"destination_path": {
+																		"value": "@pipeline().parameters.folder_name",
+																		"type": "Expression"
+																	},
+																	"file_name": {
+																		"value": "@item().name",
+																		"type": "Expression"
+																	},
+																	"file_system": {
+																		"value": "@pipeline().parameters.file_system",
+																		"type": "Expression"
+																	}
+																}
+															}
+														],
+														"outputs": [
+															{
+																"referenceName": "ds_adls_parameterized_dynamic",
+																"type": "DatasetReference",
+																"parameters": {
+																	"destination_path": {
+																		"value": "orders_data",
+																		"type": "Expression"
+																	},
+																	"file_name": {
+																		"value": "@item().name",
+																		"type": "Expression"
+																	},
+																	"file_system": {
+																		"value": "@pipeline().parameters.file_system",
+																		"type": "Expression"
+																	}
+																}
+															}
+														]
+													}
+												]
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"file_system": {
+						"type": "string"
+					},
+					"folder_name": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "Interview_practice"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_adls_only_folder_param')]",
+				"[concat(variables('factoryId'), '/datasets/ds_adls_parameterized_dynamic')]"
+			]
 		}
 	]
 }
