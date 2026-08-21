@@ -1,0 +1,19 @@
+{
+	"name": "ds_logging_json_file",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_adls",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "empty_json.json",
+				"fileSystem": "landing"
+			}
+		},
+		"schema": {}
+	}
+}

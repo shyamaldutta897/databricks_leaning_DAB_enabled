@@ -1,0 +1,154 @@
+{
+	"name": "5_get_count_of_files_and_names_of_files_in_a_folder",
+	"properties": {
+		"description": "Wy set variable is not used here - because it can hold only one value at a time. So when we try to get the overall count out - we'll get the last holding file names character count, since it will be of type string. But at the same time append variable holds an array and when we say length(var) it will give the array length and not last holding string length.",
+		"activities": [
+			{
+				"name": "Get all files from the specified folder",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_adls_only_folder_param",
+						"type": "DatasetReference",
+						"parameters": {
+							"file_system": {
+								"value": "@pipeline().parameters.file_system",
+								"type": "Expression"
+							},
+							"folder_path": {
+								"value": "@pipeline().parameters.folder_name",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "Get the list of file names from a folder",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Get all files from the specified folder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get all files from the specified folder').output.childItems",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Append variable1",
+							"type": "AppendVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "file_names",
+								"value": {
+									"value": "@item().name",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Get the file count as output",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Get the list of file names from a folder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "file_name_count",
+					"value": {
+						"value": "@length(variables('file_names'))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Bring the inside array and store in it as array",
+				"description": "The datatype chosen is array, but if we want we can choose the datatype as string and then all the file names will be joined together and converted to a string, separated by commas.",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Get the list of file names from a folder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "file_list",
+					"value": {
+						"value": "@array(variables('file_names'))",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"file_system": {
+				"type": "string"
+			},
+			"folder_name": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"file_names": {
+				"type": "Array"
+			},
+			"file_name_count": {
+				"type": "Integer"
+			},
+			"file_list": {
+				"type": "Array"
+			}
+		},
+		"folder": {
+			"name": "Interview_practice"
+		},
+		"annotations": []
+	}
+}

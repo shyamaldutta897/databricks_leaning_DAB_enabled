@@ -1,0 +1,29 @@
+{
+	"name": "ds_city_state_json",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_adls",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "city_state.json",
+				"fileSystem": "lakeflowjobcontainer"
+			}
+		},
+		"schema": {
+			"type": "object",
+			"properties": {
+				"city": {
+					"type": "string"
+				},
+				"state": {
+					"type": "string"
+				}
+			}
+		}
+	}
+}

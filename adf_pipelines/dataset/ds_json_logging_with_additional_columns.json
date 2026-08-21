@@ -1,0 +1,19 @@
+{
+	"name": "ds_json_logging_with_additional_columns",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_adls",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "copy_activity_logging",
+				"fileSystem": "adfpipelines"
+			}
+		},
+		"schema": {}
+	}
+}
