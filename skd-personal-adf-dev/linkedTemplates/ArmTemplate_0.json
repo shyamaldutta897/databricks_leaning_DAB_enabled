@@ -469,6 +469,48 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/ds_adls_only_folder_param')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_adls",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"file_system": {
+						"type": "String"
+					},
+					"folder_path": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().folder_path",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().file_system",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/ds_adls_parameterized_dynamic')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -783,62 +825,6 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/ds_meta_db')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "LS_AzureSQL_metadb",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "AzureSqlTable",
-				"schema": [
-					{
-						"name": "id",
-						"type": "int",
-						"precision": 10
-					},
-					{
-						"name": "source_id",
-						"type": "int",
-						"precision": 10
-					},
-					{
-						"name": "is_table",
-						"type": "bit"
-					},
-					{
-						"name": "source_db",
-						"type": "varchar"
-					},
-					{
-						"name": "source_schema",
-						"type": "varchar"
-					},
-					{
-						"name": "table_name",
-						"type": "varchar"
-					},
-					{
-						"name": "source_file_path",
-						"type": "varchar"
-					},
-					{
-						"name": "destination_file_path",
-						"type": "varchar"
-					}
-				],
-				"typeProperties": {
-					"schema": "meta",
-					"table": "control_list"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_metadb')]"
 			]
 		}
 	]
