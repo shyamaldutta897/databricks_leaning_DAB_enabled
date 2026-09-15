@@ -1,0 +1,15 @@
+{
+	"name": "skdadfpersonal",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "69f52436-86f4-495d-8ef2-40c783f05b1e",
+		"tenantId": "75defd25-75bc-496b-be4f-ab8f039a50fc"
+	}
+}
