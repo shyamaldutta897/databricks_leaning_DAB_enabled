@@ -1,0 +1,48 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "skdadfpersonal"
+		},
+		"LS_AzureSQL_properties_typeProperties_server": {
+			"value": "skd-personal-sql.database.windows.net"
+		},
+		"LS_AzureSQL_properties_typeProperties_database": {
+			"value": "free-sql-db-8725860"
+		},
+		"LS_AzureSQL_properties_typeProperties_userName": {
+			"value": "sql_admin"
+		},
+		"LS_AzureSQL_metadb_properties_typeProperties_server": {
+			"value": "skd-personal-sql.database.windows.net"
+		},
+		"LS_AzureSQL_metadb_properties_typeProperties_database": {
+			"value": "free-sql-db-8725860"
+		},
+		"LS_AzureSQL_metadb_properties_typeProperties_userName": {
+			"value": "sql_admin"
+		},
+		"LS_adls_properties_typeProperties_url": {
+			"value": "https://stgskdpersonaldev.dfs.core.windows.net/"
+		},
+		"LS_http_properties_typeProperties_url": {
+			"value": "https://drive.google.com/uc?id=1zO8ekHWx9U7mrbx_0Hoxxu6od7uxJqWw&export=download"
+		},
+		"LS_http_github_properties_typeProperties_url": {
+			"value": "@{linkedService().base_url}"
+		},
+		"ls_http_dynamic_parameterized_properties_typeProperties_url": {
+			"value": "@{linkedService().base_url}"
+		},
+		"ls_kv_properties_typeProperties_baseUrl": {
+			"value": "https://kvskdpersonalnew.vault.azure.net/"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
