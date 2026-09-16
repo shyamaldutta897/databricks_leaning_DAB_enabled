@@ -5,7 +5,7 @@
 		"type": "AzureSqlDatabase",
 		"typeProperties": {
 			"server": "skd-personal-sql.database.windows.net",
-			"database": "skd_personal_sql_db",
+			"database": "free-sql-db-8725860",
 			"encrypt": "mandatory",
 			"trustServerCertificate": false,
 			"authenticationType": "SQL",
@@ -16,7 +16,7 @@
 					"referenceName": "ls_kv",
 					"type": "LinkedServiceReference"
 				},
-				"secretName": "sql-user-password"
+				"secretName": "sql-db-password"
 			}
 		}
 	},
