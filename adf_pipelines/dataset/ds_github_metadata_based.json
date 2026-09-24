@@ -5,12 +5,18 @@
 			"referenceName": "LS_http_github",
 			"type": "LinkedServiceReference",
 			"parameters": {
-				"base_url": "https://raw.githubusercontent.com"
+				"base_url": {
+					"value": "@dataset().base_url",
+					"type": "Expression"
+				}
 			}
 		},
 		"parameters": {
 			"file_path": {
 				"type": "String"
+			},
+			"base_url": {
+				"type": "string"
 			}
 		},
 		"annotations": [],
@@ -19,7 +25,7 @@
 			"location": {
 				"type": "HttpServerLocation",
 				"relativeUrl": {
-					"value": "/shyamaldutta897/Datasets/refs/heads/main/@{dataset().file_path}",
+					"value": "@dataset().file_path",
 					"type": "Expression"
 				}
 			},

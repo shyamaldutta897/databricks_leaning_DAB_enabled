@@ -108,7 +108,11 @@
 									"type": "DatasetReference",
 									"parameters": {
 										"file_path": {
-											"value": "@{item().source_file_path}.csv",
+											"value": "@{item().relative_url}.csv",
+											"type": "Expression"
+										},
+										"base_url": {
+											"value": "@item().base_url",
 											"type": "Expression"
 										}
 									}
@@ -124,7 +128,7 @@
 											"type": "Expression"
 										},
 										"file_name": {
-											"value": "@{last(split(item().source_file_path,'/'))}.csv",
+											"value": "@{last(split(item().relative_url,'/'))}.csv",
 											"type": "Expression"
 										}
 									}
