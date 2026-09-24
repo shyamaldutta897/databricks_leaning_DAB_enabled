@@ -9,8 +9,8 @@
 			"folder_name": {
 				"type": "String"
 			},
-			"file_name": {
-				"type": "String"
+			"file_system": {
+				"type": "string"
 			}
 		},
 		"annotations": [],
@@ -26,7 +26,10 @@
 					"value": "@dataset().folder_name",
 					"type": "Expression"
 				},
-				"fileSystem": "landing"
+				"fileSystem": {
+					"value": "@dataset().file_system",
+					"type": "Expression"
+				}
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",
