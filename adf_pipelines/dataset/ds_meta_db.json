@@ -5,6 +5,11 @@
 			"referenceName": "LS_AzureSQL_metadb",
 			"type": "LinkedServiceReference"
 		},
+		"parameters": {
+			"test": {
+				"type": "string"
+			}
+		},
 		"annotations": [],
 		"type": "AzureSqlTable",
 		"schema": [
