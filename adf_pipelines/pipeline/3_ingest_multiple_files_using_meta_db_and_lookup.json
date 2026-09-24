@@ -129,8 +129,12 @@
 											"value": "@{item().destination_file_path}",
 											"type": "Expression"
 										},
+										"file_system": {
+											"value": "@item().file_system",
+											"type": "Expression"
+										},
 										"file_name": {
-											"value": "@{last(split(item().relative_url,'/'))}.csv",
+											"value": "@concat(last(split(item().relative_url, '/')),'.',item().file_extension)",
 											"type": "Expression"
 										}
 									}
