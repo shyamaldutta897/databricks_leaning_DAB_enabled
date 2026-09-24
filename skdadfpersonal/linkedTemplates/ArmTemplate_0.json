@@ -76,6 +76,7 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"description": "gh linked service",
 				"parameters": {
 					"base_url": {
 						"type": "string"
@@ -166,11 +167,20 @@
 			"properties": {
 				"linkedServiceName": {
 					"referenceName": "LS_http_github",
-					"type": "LinkedServiceReference"
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"base_url": {
+							"value": "@dataset().base_url",
+							"type": "Expression"
+						}
+					}
 				},
 				"parameters": {
 					"file_path": {
 						"type": "String"
+					},
+					"base_url": {
+						"type": "string"
 					}
 				},
 				"annotations": [],
@@ -179,7 +189,7 @@
 					"location": {
 						"type": "HttpServerLocation",
 						"relativeUrl": {
-							"value": "/shyamaldutta897/Datasets/refs/heads/main/@{dataset().file_path}",
+							"value": "@dataset().file_path",
 							"type": "Expression"
 						}
 					},
@@ -351,6 +361,7 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"description": "azure sql ls",
 				"annotations": [],
 				"type": "AzureSqlDatabase",
 				"typeProperties": {

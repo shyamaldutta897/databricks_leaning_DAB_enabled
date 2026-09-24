@@ -377,6 +377,7 @@
 				"activities": [
 					{
 						"name": "fetch ingest info from metadb",
+						"description": "This activity will fetch all rows from the SQL table and present the output as list of dicts. The list name is called value, so while passing the output to the next activity, we need to mention it as output.value.",
 						"type": "Lookup",
 						"dependsOn": [],
 						"policy": {
@@ -402,7 +403,8 @@
 						}
 					},
 					{
-						"name": "ForEach1",
+						"name": "loop over every item passed by lookup",
+						"description": "This is nothing but a for loop. It will consume all the items from the value list one by one and pass into the activity that is located inside it.",
 						"type": "ForEach",
 						"dependsOn": [
 							{
@@ -482,7 +484,11 @@
 											"type": "DatasetReference",
 											"parameters": {
 												"file_path": {
-													"value": "@{item().source_file_path}.csv",
+													"value": "@concat(item().relative_url,'.',item().file_extension)",
+													"type": "Expression"
+												},
+												"base_url": {
+													"value": "@item().base_url",
 													"type": "Expression"
 												}
 											}
@@ -497,8 +503,12 @@
 													"value": "@{item().destination_file_path}",
 													"type": "Expression"
 												},
+												"file_system": {
+													"value": "@item().file_system",
+													"type": "Expression"
+												},
 												"file_name": {
-													"value": "@{last(split(item().source_file_path,'/'))}.csv",
+													"value": "@concat(last(split(item().relative_url, '/')),'.',item().file_extension)",
 													"type": "Expression"
 												}
 											}
@@ -2404,11 +2414,20 @@
 			"properties": {
 				"linkedServiceName": {
 					"referenceName": "LS_http_github",
-					"type": "LinkedServiceReference"
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"base_url": {
+							"value": "@dataset().base_url",
+							"type": "Expression"
+						}
+					}
 				},
 				"parameters": {
 					"file_path": {
 						"type": "String"
+					},
+					"base_url": {
+						"type": "string"
 					}
 				},
 				"annotations": [],
@@ -2417,7 +2436,7 @@
 					"location": {
 						"type": "HttpServerLocation",
 						"relativeUrl": {
-							"value": "/shyamaldutta897/Datasets/refs/heads/main/@{dataset().file_path}",
+							"value": "@dataset().file_path",
 							"type": "Expression"
 						}
 					},
@@ -2610,7 +2629,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_AzureSQL_metadb",
+					"referenceName": "LS_AzureSQL",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -2639,15 +2658,27 @@
 						"type": "varchar"
 					},
 					{
-						"name": "table_name",
+						"name": "name",
 						"type": "varchar"
 					},
 					{
-						"name": "source_file_path",
+						"name": "base_url",
+						"type": "varchar"
+					},
+					{
+						"name": "relative_url",
 						"type": "varchar"
 					},
 					{
 						"name": "destination_file_path",
+						"type": "varchar"
+					},
+					{
+						"name": "file_extension",
+						"type": "varchar"
+					},
+					{
+						"name": "file_system",
 						"type": "varchar"
 					}
 				],
@@ -2657,7 +2688,7 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_metadb')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL')]"
 			]
 		},
 		{
@@ -2673,8 +2704,11 @@
 					"folder_name": {
 						"type": "String"
 					},
+					"file_system": {
+						"type": "string"
+					},
 					"file_name": {
-						"type": "String"
+						"type": "string"
 					}
 				},
 				"annotations": [],
@@ -2690,7 +2724,10 @@
 							"value": "@dataset().folder_name",
 							"type": "Expression"
 						},
-						"fileSystem": "landing"
+						"fileSystem": {
+							"value": "@dataset().file_system",
+							"type": "Expression"
+						}
 					},
 					"columnDelimiter": ",",
 					"escapeChar": "\\",
@@ -2861,6 +2898,7 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"description": "azure sql ls",
 				"annotations": [],
 				"type": "AzureSqlDatabase",
 				"typeProperties": {
@@ -2927,6 +2965,7 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"description": "gh linked service",
 				"parameters": {
 					"base_url": {
 						"type": "string"
