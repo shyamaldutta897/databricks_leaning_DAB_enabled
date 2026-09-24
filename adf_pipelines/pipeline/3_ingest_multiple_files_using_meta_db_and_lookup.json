@@ -4,6 +4,7 @@
 		"activities": [
 			{
 				"name": "fetch ingest info from metadb",
+				"description": "This activity will fetch all rows from the SQL table and present the output as list of dicts. The list name is called value, so while passing the output to the next activity, we need to mention it as output.value.",
 				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
@@ -28,7 +29,8 @@
 				}
 			},
 			{
-				"name": "ForEach1",
+				"name": "loop over every item passed by lookup",
+				"description": "This is nothing but a for loop. It will consume all the items from the value list one by one and pass into the activity that is located inside it.",
 				"type": "ForEach",
 				"dependsOn": [
 					{
@@ -108,7 +110,7 @@
 									"type": "DatasetReference",
 									"parameters": {
 										"file_path": {
-											"value": "@{item().relative_url}.csv",
+											"value": "@concat(item().relative_url,'.',item().file_extension)",
 											"type": "Expression"
 										},
 										"base_url": {
