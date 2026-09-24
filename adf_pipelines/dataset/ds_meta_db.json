@@ -1,0 +1,63 @@
+{
+	"name": "ds_meta_db",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AzureSQL",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "source_id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "is_table",
+				"type": "bit"
+			},
+			{
+				"name": "source_db",
+				"type": "varchar"
+			},
+			{
+				"name": "source_schema",
+				"type": "varchar"
+			},
+			{
+				"name": "name",
+				"type": "varchar"
+			},
+			{
+				"name": "base_url",
+				"type": "varchar"
+			},
+			{
+				"name": "relative_url",
+				"type": "varchar"
+			},
+			{
+				"name": "destination_file_path",
+				"type": "varchar"
+			},
+			{
+				"name": "file_extension",
+				"type": "varchar"
+			},
+			{
+				"name": "file_system",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "meta",
+			"table": "control_list"
+		}
+	}
+}
