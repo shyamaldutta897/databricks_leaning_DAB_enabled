@@ -3,7 +3,10 @@
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "LS_http_github",
-			"type": "LinkedServiceReference"
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"base_url": "https://raw.githubusercontent.com"
+			}
 		},
 		"parameters": {
 			"file_path": {
