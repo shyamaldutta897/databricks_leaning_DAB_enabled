@@ -12,6 +12,7 @@
 			"url": "@{linkedService().base_url}",
 			"enableServerCertificateValidation": true,
 			"authenticationType": "Anonymous"
-		}
+		},
+		"description": "gh linked service"
 	}
 }
