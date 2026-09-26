@@ -3,7 +3,7 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "latest_modified_from_data_table",
+				"name": "lookup meta table to get table names",
 				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
@@ -17,148 +17,222 @@
 				"typeProperties": {
 					"source": {
 						"type": "AzureSqlSource",
-						"sqlReaderQuery": "select max(modified_date) as max_date from dbo.Employees",
+						"sqlReaderQuery": "select * from meta.control_list where is_table='true'",
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},
 					"dataset": {
-						"referenceName": "ds_azure_sql_employees_table",
+						"referenceName": "ds_meta_db",
 						"type": "DatasetReference"
-					}
+					},
+					"firstRowOnly": false
 				}
 			},
 			{
-				"name": "last_modified_from_lookup_table",
-				"type": "Lookup",
-				"dependsOn": [],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"source": {
-						"type": "AzureSqlSource",
-						"sqlReaderQuery": "select last_modified from dbo.modified_date_lookup where table_name = 'modified_date_lookup '",
-						"queryTimeout": "02:00:00",
-						"partitionOption": "None"
-					},
-					"dataset": {
-						"referenceName": "ds_azure_sql_employees_table",
-						"type": "DatasetReference"
-					}
-				}
-			},
-			{
-				"name": "Copy data1",
-				"type": "Copy",
+				"name": "Loop over every item received from lookup",
+				"type": "ForEach",
 				"dependsOn": [
 					{
-						"activity": "latest_modified_from_data_table",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					},
-					{
-						"activity": "last_modified_from_lookup_table",
+						"activity": "lookup meta table to get table names",
 						"dependencyConditions": [
 							"Succeeded"
 						]
 					}
 				],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
 				"userProperties": [],
 				"typeProperties": {
-					"source": {
-						"type": "AzureSqlSource",
-						"sqlReaderQuery": {
-							"value": "select * from dbo.Employees\nwhere modified_date>=CONVERT(DATETIME2,'@{activity('last_modified_from_lookup_table').output.firstRow.last_modified}',126) \n\nand modified_date<=CONVERT(DATETIME2,'@{activity('latest_modified_from_data_table').output.firstRow.max_date}',126)",
-							"type": "Expression"
-						},
-						"queryTimeout": "02:00:00",
-						"partitionOption": "None"
+					"items": {
+						"value": "@activity('lookup meta table to get table names').output.value",
+						"type": "Expression"
 					},
-					"sink": {
-						"type": "DelimitedTextSink",
-						"storeSettings": {
-							"type": "AzureBlobFSWriteSettings"
-						},
-						"formatSettings": {
-							"type": "DelimitedTextWriteSettings",
-							"quoteAllText": true,
-							"fileExtension": ".txt"
-						}
-					},
-					"enableStaging": false,
-					"translator": {
-						"type": "TabularTranslator",
-						"typeConversion": true,
-						"typeConversionSettings": {
-							"allowDataTruncation": true,
-							"treatBooleanAsNumber": false
-						}
-					}
-				},
-				"inputs": [
-					{
-						"referenceName": "ds_azure_sql_employees_table",
-						"type": "DatasetReference"
-					}
-				],
-				"outputs": [
-					{
-						"referenceName": "dynamic_csv_output",
-						"type": "DatasetReference"
-					}
-				]
-			},
-			{
-				"name": "Stored procedure1",
-				"type": "SqlServerStoredProcedure",
-				"dependsOn": [
-					{
-						"activity": "Copy data1",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"storedProcedureName": "[dbo].[get_last_modified_date]",
-					"storedProcedureParameters": {
-						"last_modified": {
-							"value": {
-								"value": "@activity('latest_modified_from_data_table').output.firstRow.max_date",
-								"type": "Expression"
+					"activities": [
+						{
+							"name": "latest_modified_from_data_table",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
 							},
-							"type": "DateTime"
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@concat('SELECT MAX(last_modified) AS max_date FROM ',item().source_schema,'.',item().name)",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "ds_azure_sql_employees_table",
+									"type": "DatasetReference"
+								},
+								"firstRowOnly": true
+							}
 						},
-						"table_name": {
-							"value": "modified_date_lookup",
-							"type": "String"
+						{
+							"name": "last_modified_from_lookup_table",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@concat('select last_modified from meta.control_list where name = ''',item().name,'''')",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "ds_meta_db",
+									"type": "DatasetReference"
+								},
+								"firstRowOnly": true
+							}
+						},
+						{
+							"name": "pickup data",
+							"description": "copy data from the provided table name in an incremental order and dump in adls",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "latest_modified_from_data_table",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "last_modified_from_lookup_table",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@concat(\n    'select * from ',item().source_schema, '.', item().name,'  where last_modified between ''',activity('last_modified_from_lookup_table').output.firstRow.last_modified,''' and ''',activity('latest_modified_from_data_table').output.firstRow.max_date,''''\n)",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_meta_db",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_adls_parameterized_dynamic",
+									"type": "DatasetReference",
+									"parameters": {
+										"destination_path": {
+											"value": "@item().destination_file_path",
+											"type": "Expression"
+										},
+										"file_name": {
+											"value": "@concat(item().name, '_', formatDateTime(activity('latest_modified_from_data_table').output.firstRow.max_date, 'yyyy-MM-dd_HH-mm-ss'))",
+											"type": "Expression"
+										},
+										"file_system": {
+											"value": "@item().file_system",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "run the stored proc",
+							"description": "run the stored proc to update latest modified date that is available in the actual table",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "pickup data",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[meta].[get_last_modified_date]",
+								"storedProcedureParameters": {
+									"last_modified": {
+										"value": {
+											"value": "@activity('latest_modified_from_data_table').output.firstRow.max_date",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"table_name": {
+										"value": {
+											"value": "@item().name",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_AzureSQL_metadb",
+								"type": "LinkedServiceReference"
+							}
 						}
-					}
-				},
-				"linkedServiceName": {
-					"referenceName": "LS_AzureSQL",
-					"type": "LinkedServiceReference"
+					]
 				}
 			}
 		],
