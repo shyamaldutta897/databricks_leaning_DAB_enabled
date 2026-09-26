@@ -68,10 +68,6 @@
 									"queryTimeout": "02:00:00",
 									"partitionOption": "None"
 								},
-								"dataset": {
-									"referenceName": "ds_azure_sql_employees_table",
-									"type": "DatasetReference"
-								},
 								"firstRowOnly": true
 							}
 						},
