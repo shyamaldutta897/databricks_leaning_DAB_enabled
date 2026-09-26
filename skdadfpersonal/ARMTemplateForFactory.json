@@ -1890,7 +1890,6 @@
 					"columnDelimiter": ",",
 					"escapeChar": "\\",
 					"firstRowAsHeader": true,
-					"nullValue": "na",
 					"quoteChar": "\""
 				},
 				"schema": [
