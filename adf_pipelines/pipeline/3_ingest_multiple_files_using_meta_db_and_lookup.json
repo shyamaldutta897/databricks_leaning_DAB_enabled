@@ -18,6 +18,7 @@
 				"typeProperties": {
 					"source": {
 						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select * from meta.control_list where mode='overwrite'",
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},

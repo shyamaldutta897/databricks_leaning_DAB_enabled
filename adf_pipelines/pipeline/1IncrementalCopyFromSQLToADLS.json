@@ -18,7 +18,7 @@
 				"typeProperties": {
 					"source": {
 						"type": "AzureSqlSource",
-						"sqlReaderQuery": "select * from meta.control_list where is_table='true'",
+						"sqlReaderQuery": "select * from meta.control_list where mode='incremental'",
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},
