@@ -415,6 +415,7 @@
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"description": "This pipeline is intended to pickup data from multiple SQL tables in an incremental order and drop them as new csv files in a predefined folder in ADLS. First we create a lookup table where the main components are table names, schema names and last modified date - which indicates that this was the last date when we received data for this specific table. Keep this date in datetimeformat, until and unless we are sure that we get data only once a day. This case is applicable when we for sure know that there will be a watermark field in the tables that we receive. Next, setup a lookup activity to fetch all table rows from metadata table or lookup table, push that output into a for each activity. Now in the foreach activity, use two lookups, one for the last modified value from lookup table and another for last modified from data tables. In both of these tables make sure to fetch only the first row, because we need only the firstrow output. Now connect both of these activities into a copy activity where the source dataset will be linked to the sql db from where we want to pull the data, where condition will pick any date which is greater than the look up table last modified date and less than or equal to last_modified date in the actual data tables. Now if we implement only till this part, this will be still a batch pipeline and not incremental. To make it incremental what we need to do is, bring in a stored proc activity. This proc will make sure that after every time data is written into adls, the last_modified value in the lookup table is updated exactly as the last modified value that exists in the data tables. This makes sure that from the second load onward, the pipeline considers data between the new last_modified date in the lookup table and new last_modified date in the data tables.",
 				"activities": [
 					{
 						"name": "lookup meta table to get table names",
@@ -463,6 +464,7 @@
 							"activities": [
 								{
 									"name": "latest_modified_from_data_table",
+									"description": "This activity fetches the latest last modified date from data table that will be passed as an output by for each activity outside",
 									"type": "Lookup",
 									"dependsOn": [],
 									"policy": {
@@ -493,6 +495,7 @@
 								},
 								{
 									"name": "last_modified_from_lookup_table",
+									"description": "This activity fetches the latest last modified date from meta table that will be passed as an output by for each activity outside. ",
 									"type": "Lookup",
 									"dependsOn": [],
 									"policy": {
@@ -523,7 +526,7 @@
 								},
 								{
 									"name": "pickup data",
-									"description": "copy data from the provided table name in an incremental order and dump in adls",
+									"description": "copy data from the provided table name in an incremental order and dump in adls. Sorurce is connected to the SQL DB from where data is copied and sink is connected to the ADLS where data is being written. Source uses the filter '> last_modified from lookup table and <=last_modified from data tables' to make sure that data is picked incrementally.",
 									"type": "Copy",
 									"dependsOn": [
 										{
@@ -551,7 +554,7 @@
 										"source": {
 											"type": "AzureSqlSource",
 											"sqlReaderQuery": {
-												"value": "@concat(\n    'select * from ',item().source_schema, '.', item().name,'  where last_modified between ''',activity('last_modified_from_lookup_table').output.firstRow.last_modified,''' and ''',activity('latest_modified_from_data_table').output.firstRow.max_date,''''\n)",
+												"value": "@concat(\n    'select * from ',item().source_schema, '.', item().name,'  where last_modified > ''',activity('last_modified_from_lookup_table').output.firstRow.last_modified,''' and last_modified <= ''',activity('latest_modified_from_data_table').output.firstRow.max_date,''''\n)",
 												"type": "Expression"
 											},
 											"queryTimeout": "02:00:00",
@@ -608,7 +611,7 @@
 								},
 								{
 									"name": "run the stored proc",
-									"description": "run the stored proc to update latest modified date that is available in the actual table",
+									"description": "run the stored proc to update latest modified date that is available in the actual table. Without this proc, this pipeline will never become an incremental pipeline, because it helps to keep updating the lookup tables' last_modified field for each and every table.",
 									"type": "SqlServerStoredProcedure",
 									"dependsOn": [
 										{
@@ -660,7 +663,9 @@
 				"folder": {
 					"name": "Interview_practice"
 				},
-				"annotations": []
+				"annotations": [
+					"incremental load sql to adls using meta table"
+				]
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/ds_meta_db')]"
