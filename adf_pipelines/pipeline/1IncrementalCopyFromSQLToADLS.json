@@ -49,6 +49,7 @@
 					"activities": [
 						{
 							"name": "latest_modified_from_data_table",
+							"description": "This activity fetches the latest last modified date from data table that will be passed as an output by for each activity outside",
 							"type": "Lookup",
 							"dependsOn": [],
 							"policy": {
@@ -78,6 +79,7 @@
 						},
 						{
 							"name": "last_modified_from_lookup_table",
+							"description": "This activity fetches the latest last modified date from meta table that will be passed as an output by for each activity outside. ",
 							"type": "Lookup",
 							"dependsOn": [],
 							"policy": {
@@ -107,7 +109,7 @@
 						},
 						{
 							"name": "pickup data",
-							"description": "copy data from the provided table name in an incremental order and dump in adls",
+							"description": "copy data from the provided table name in an incremental order and dump in adls. Sorurce is connected to the SQL DB from where data is copied and sink is connected to the ADLS where data is being written. Source uses the filter '> last_modified from lookup table and <=last_modified from data tables' to make sure that data is picked incrementally.",
 							"type": "Copy",
 							"dependsOn": [
 								{
@@ -191,7 +193,7 @@
 						},
 						{
 							"name": "run the stored proc",
-							"description": "run the stored proc to update latest modified date that is available in the actual table",
+							"description": "run the stored proc to update latest modified date that is available in the actual table. Without this proc, this pipeline will never become an incremental pipeline, because it helps to keep updating the lookup tables' last_modified field for each and every table.",
 							"type": "SqlServerStoredProcedure",
 							"dependsOn": [
 								{
