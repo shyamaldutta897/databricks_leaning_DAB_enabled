@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "6"
+# ///
 # MAGIC %md
 # MAGIC ### Check current catalog, metastore and schema
 
@@ -87,7 +91,7 @@
 # MAGIC %sql
 # MAGIC
 # MAGIC create catalog skd_personal_bronze 
-# MAGIC managed location 'abfss://bronze@stgsdpersonaldev.dfs.core.windows.net/unity_catalog'
+# MAGIC managed location 'abfss://skd-personal-deltalakehouse@stgskdpersonaldev.dfs.core.windows.net/delta-lakehouse'
 
 # COMMAND ----------
 
@@ -124,8 +128,8 @@
 
 # MAGIC %sql
 # MAGIC CREATE EXTERNAL LOCATION stg_sd_personal_dev_schema_ext_loc URL 
-# MAGIC 'abfss://bronze@stgsdpersonaldev.dfs.core.windows.net/schema' 
-# MAGIC WITH(CREDENTIAL uc_credentials_dev) 
+# MAGIC 'abfss://skd-personal-deltalakehouse@stgskdpersonaldev.dfs.core.windows.net/schema_ext_location'
+# MAGIC WITH(CREDENTIAL catalog_creds) 
 # MAGIC COMMENT "This is a schema external location"
 
 # COMMAND ----------
@@ -137,7 +141,7 @@
 
 # MAGIC %sql
 # MAGIC create schema skd_personal_bronze.new_schema
-# MAGIC managed location "abfss://bronze@stgsdpersonaldev.dfs.core.windows.net/schema"
+# MAGIC managed location "abfss://skd-personal-deltalakehouse@stgskdpersonaldev.dfs.core.windows.net/schema_ext_location"
 
 # COMMAND ----------
 
