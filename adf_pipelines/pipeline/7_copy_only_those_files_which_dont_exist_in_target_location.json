@@ -1,0 +1,211 @@
+{
+	"name": "7_copy_only_those_files_which_dont_exist_in_target_location",
+	"properties": {
+		"description": "1. Add a get metadata from source, list all childitems\n2. Repeat the same for sink location\n3. Add filter activity. It has items which is nothing but an iterating field. Meaning the array that we pass here will be iterated over. We'll pass the childlitems list of source metadata, because these values will be checked one by one against sink.\n4. Next in condition filed, we use a contains expression. Convert the array value of sink childitems array into a plain string separated by commas, for that reason we use the string function. Next pick each value from source and see if it exists in the string. If no then get the output.\n5. Next foreach activity to list the output and we pick only the value field from the output dict (output.value)\n6. Inside for each, setup a copy actvity and pass the file names as item().name.",
+		"activities": [
+			{
+				"name": "Get childitems from source",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_adls_wo_filename",
+						"type": "DatasetReference",
+						"parameters": {
+							"file_system": {
+								"value": "landing",
+								"type": "Expression"
+							},
+							"folder": {
+								"value": "files",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "Get childitems from sink",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_adls_wo_filename",
+						"type": "DatasetReference",
+						"parameters": {
+							"file_system": "adfpipelines",
+							"folder": "files_copy"
+						}
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "filter files that exists in source but not in sink",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Get childitems from sink",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Get childitems from source",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get childitems from source').output.childItems",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@not(contains(string(activity('Get childitems from sink').output.childItems),concat('\"',item().name,'\"')))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Pick up output from filter",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "filter files that exists in source but not in sink",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('filter files that exists in source but not in sink').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copy only those files that are not in sink",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"wildcardFolderPath": "files",
+										"wildcardFileName": "*",
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_adls_only_folder_param",
+									"type": "DatasetReference",
+									"parameters": {
+										"file_system": "landing",
+										"folder_path": "files"
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_adls_parameterized_dynamic",
+									"type": "DatasetReference",
+									"parameters": {
+										"destination_path": "files_copy",
+										"file_name": {
+											"value": "@item().name",
+											"type": "Expression"
+										},
+										"file_system": "adfpipelines"
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"file_names": {
+				"type": "Array"
+			}
+		},
+		"folder": {
+			"name": "Interview_practice"
+		},
+		"annotations": []
+	}
+}
