@@ -1,0 +1,204 @@
+{
+	"name": "8_copy_files_that_are_n_days_old",
+	"properties": {
+		"description": "1. Get all childitems from a folder. We need only container and folder for this activity.\n2. Loop through the list of childitems\n3. Inside the loop activity add another metadata activity. In this activity we need filename as well, because we need last modified of each and every file.\n4. Add if condition. Check difference between the last modified date and current date. Explanation of the formula in the if activity.\n5. If true, then copy the files else do nothing.",
+		"activities": [
+			{
+				"name": "get list of childitems in a folder",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_adls_only_folder_param",
+						"type": "DatasetReference",
+						"parameters": {
+							"file_system": "landing",
+							"folder_path": "files"
+						}
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "pick each file as output from get metadata",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "get list of childitems in a folder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('get list of childitems in a folder').output.childItems",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "take file names as input",
+							"description": "take file names as input from for each and fetch last modified",
+							"type": "GetMetadata",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "ds_adls_parameterized_dynamic",
+									"type": "DatasetReference",
+									"parameters": {
+										"destination_path": "files",
+										"file_name": {
+											"value": "@item().name",
+											"type": "Expression"
+										},
+										"file_system": "landing"
+									}
+								},
+								"fieldList": [
+									"lastModified"
+								],
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							}
+						},
+						{
+							"name": "check if last modified is less than n days",
+							"description": "check if last modified is less than n days(pipeline param)\ngreaterOrEquals - Greater than or equal to\ndiv - divide\nsub - subtract\nticks - convert date value into int\n\nSo altogether - convert last modified and current date into int, subtract the values and divide by 864000000000 (number of seconds in 24 hours) to get the output in days.\n",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "take file names as input",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@greaterOrEquals(\n    div(sub(ticks(formatDateTime(utcNow(),'yyyy-MM-dd')), ticks(formatDateTime(activity('take file names as input').output.lastModified,'yyyy-MM-dd'))), 864000000000), \n    pipeline().parameters.days_old\n)",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "copy files that are older than n days",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "DelimitedTextSource",
+												"storeSettings": {
+													"type": "AzureBlobFSReadSettings",
+													"recursive": false,
+													"wildcardFolderPath": "files",
+													"wildcardFileName": "*",
+													"enablePartitionDiscovery": false
+												},
+												"formatSettings": {
+													"type": "DelimitedTextReadSettings"
+												}
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "ds_adls_only_folder_param",
+												"type": "DatasetReference",
+												"parameters": {
+													"file_system": "landing",
+													"folder_path": "files"
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "ds_adls_only_folder_param",
+												"type": "DatasetReference",
+												"parameters": {
+													"file_system": "adfpipelines",
+													"folder_path": "old_files"
+												}
+											}
+										]
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"days_old": {
+				"type": "int"
+			}
+		},
+		"variables": {
+			"file_names": {
+				"type": "Array"
+			}
+		},
+		"folder": {
+			"name": "Interview_practice"
+		},
+		"annotations": []
+	}
+}
