@@ -13,6 +13,1000 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/7_copy_only_those_files_which_dont_exist_in_target_location')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "1. Add a get metadata from source, list all childitems\n2. Repeat the same for sink location\n3. Add filter activity. It has items which is nothing but an iterating field. Meaning the array that we pass here will be iterated over. We'll pass the childlitems list of source metadata, because these values will be checked one by one against sink.\n4. Next in condition filed, we use a contains expression. Convert the array value of sink childitems array into a plain string separated by commas, for that reason we use the string function. Next pick each value from source and see if it exists in the string. If no then get the output.\n5. Next foreach activity to list the output and we pick only the value field from the output dict (output.value)\n6. Inside for each, setup a copy actvity and pass the file names as item().name.",
+				"activities": [
+					{
+						"name": "Get childitems from source",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_adls_wo_filename",
+								"type": "DatasetReference",
+								"parameters": {
+									"file_system": {
+										"value": "landing",
+										"type": "Expression"
+									},
+									"folder": {
+										"value": "files",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "Get childitems from sink",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_adls_wo_filename",
+								"type": "DatasetReference",
+								"parameters": {
+									"file_system": "adfpipelines",
+									"folder": "files_copy"
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "filter files that exists in source but not in sink",
+						"type": "Filter",
+						"dependsOn": [
+							{
+								"activity": "Get childitems from sink",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Get childitems from source",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get childitems from source').output.childItems",
+								"type": "Expression"
+							},
+							"condition": {
+								"value": "@not(contains(string(activity('Get childitems from sink').output.childItems),concat('\"',item().name,'\"')))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Pick up output from filter",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "filter files that exists in source but not in sink",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('filter files that exists in source but not in sink').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy only those files that are not in sink",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"wildcardFolderPath": "files",
+												"wildcardFileName": "*",
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_adls_only_folder_param",
+											"type": "DatasetReference",
+											"parameters": {
+												"file_system": "landing",
+												"folder_path": "files"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_adls_parameterized_dynamic",
+											"type": "DatasetReference",
+											"parameters": {
+												"destination_path": "files_copy",
+												"file_name": {
+													"value": "@item().name",
+													"type": "Expression"
+												},
+												"file_system": "adfpipelines"
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"file_names": {
+						"type": "Array"
+					}
+				},
+				"folder": {
+					"name": "Interview_practice"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/8_copy_files_that_are_n_days_old')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "1. Get all childitems from a folder. We need only container and folder for this activity.\n2. Loop through the list of childitems\n3. Inside the loop activity add another metadata activity. In this activity we need filename as well, because we need last modified of each and every file.\n4. Add if condition. Check difference between the last modified date and current date. Explanation of the formula in the if activity.\n5. If true, then copy the files else do nothing.",
+				"activities": [
+					{
+						"name": "get list of childitems in a folder",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_adls_only_folder_param",
+								"type": "DatasetReference",
+								"parameters": {
+									"file_system": "landing",
+									"folder_path": "files"
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "pick each file as output from get metadata",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "get list of childitems in a folder",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('get list of childitems in a folder').output.childItems",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "take file names as input",
+									"description": "take file names as input from for each and fetch last modified",
+									"type": "GetMetadata",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "ds_adls_parameterized_dynamic",
+											"type": "DatasetReference",
+											"parameters": {
+												"destination_path": "files",
+												"file_name": {
+													"value": "@item().name",
+													"type": "Expression"
+												},
+												"file_system": "landing"
+											}
+										},
+										"fieldList": [
+											"lastModified"
+										],
+										"storeSettings": {
+											"type": "AzureBlobFSReadSettings",
+											"recursive": true,
+											"enablePartitionDiscovery": false
+										},
+										"formatSettings": {
+											"type": "DelimitedTextReadSettings"
+										}
+									}
+								},
+								{
+									"name": "check if last modified is less than n days",
+									"description": "check if last modified is less than n days(pipeline param)\ngreaterOrEquals - Greater than or equal to\ndiv - divide\nsub - subtract\nticks - convert date value into int\n\nSo altogether - convert last modified and current date into int, subtract the values and divide by 864000000000 (number of seconds in 24 hours) to get the output in days.\n",
+									"type": "IfCondition",
+									"dependsOn": [
+										{
+											"activity": "take file names as input",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@greaterOrEquals(\n    div(sub(ticks(formatDateTime(utcNow(),'yyyy-MM-dd')), ticks(formatDateTime(activity('take file names as input').output.lastModified,'yyyy-MM-dd'))), 864000000000), \n    pipeline().parameters.days_old\n)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "copy files that are older than n days",
+												"type": "Copy",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "DelimitedTextSource",
+														"storeSettings": {
+															"type": "AzureBlobFSReadSettings",
+															"recursive": false,
+															"wildcardFolderPath": "files",
+															"wildcardFileName": "*",
+															"enablePartitionDiscovery": false
+														},
+														"formatSettings": {
+															"type": "DelimitedTextReadSettings"
+														}
+													},
+													"sink": {
+														"type": "DelimitedTextSink",
+														"storeSettings": {
+															"type": "AzureBlobFSWriteSettings"
+														},
+														"formatSettings": {
+															"type": "DelimitedTextWriteSettings",
+															"quoteAllText": true,
+															"fileExtension": ".txt"
+														}
+													},
+													"enableStaging": false,
+													"translator": {
+														"type": "TabularTranslator",
+														"typeConversion": true,
+														"typeConversionSettings": {
+															"allowDataTruncation": true,
+															"treatBooleanAsNumber": false
+														}
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "ds_adls_only_folder_param",
+														"type": "DatasetReference",
+														"parameters": {
+															"file_system": "landing",
+															"folder_path": "files"
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "ds_adls_only_folder_param",
+														"type": "DatasetReference",
+														"parameters": {
+															"file_system": "adfpipelines",
+															"folder_path": "old_files"
+														}
+													}
+												]
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"days_old": {
+						"type": "int"
+					}
+				},
+				"variables": {
+					"file_names": {
+						"type": "Array"
+					}
+				},
+				"folder": {
+					"name": "Interview_practice"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CopyFromADLSToSQL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Validate if the file exists",
+						"type": "Validation",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_customers_csv2",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"timeout": "0.00:01:00",
+							"sleep": 10
+						}
+					},
+					{
+						"name": "Check if the file exists and column count matches",
+						"type": "GetMetadata",
+						"dependsOn": [
+							{
+								"activity": "Validate if the file exists",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_customers_csv2",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"exists",
+								"columnCount",
+								"itemType"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "check if file exists and column count matches",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Check if the file exists and column count matches",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@and(activity('Check if the file exists and column count matches').output.exists, equals(activity('Check if the file exists and column count matches').output.columnCount,11))",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "If the condition fails",
+									"type": "Fail",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"message": "Data copy has failed, check source files.",
+										"errorCode": "666"
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "Copy from ADLS to SQL",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "AzureSqlSink",
+											"writeBehavior": "upsert",
+											"upsertSettings": {
+												"useTempDB": true,
+												"keys": [
+													"Customer Id"
+												]
+											},
+											"sqlWriterUseTableLock": false,
+											"disableMetricsCollection": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_customers_csv2",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_customers_upsert",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "Delete if copy is successful",
+									"type": "Delete",
+									"dependsOn": [
+										{
+											"activity": "Copy from ADLS to SQL",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "ds_customers_csv2",
+											"type": "DatasetReference",
+											"parameters": {}
+										},
+										"logStorageSettings": {
+											"linkedServiceName": {
+												"referenceName": "LS_adls",
+												"type": "LinkedServiceReference"
+											},
+											"path": "adfpipelines/delete_logs_adf"
+										},
+										"enableLogging": true,
+										"storeSettings": {
+											"type": "AzureBlobFSReadSettings",
+											"recursive": true,
+											"enablePartitionDiscovery": false
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "Session2 pipelines"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CleanDataFromADLS')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ds_customers_csv",
+								"type": "DatasetReference"
+							},
+							"name": "adlscustomers"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ds_customer_count_aggregated",
+								"type": "DatasetReference"
+							},
+							"name": "customersaggregated"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_customer_data_raw",
+								"type": "DatasetReference"
+							},
+							"name": "customerrawdata"
+						}
+					],
+					"transformations": [
+						{
+							"name": "selectcolumns"
+						},
+						{
+							"name": "concatnames"
+						},
+						{
+							"name": "customercountbycountry"
+						},
+						{
+							"name": "keepfields"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Index as string,",
+						"          {Customer Id} as string,",
+						"          {First Name} as string,",
+						"          {Last Name} as string,",
+						"          Company as string,",
+						"          City as string,",
+						"          Country as string,",
+						"          {Phone 1} as string,",
+						"          {Phone 2} as string,",
+						"          Email as string,",
+						"          {Subscription Date} as string,",
+						"          Website as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     partitionBy('roundRobin', 2)) ~> adlscustomers",
+						"adlscustomers select(mapColumn(",
+						"          Index,",
+						"          {Customer Id},",
+						"          {First Name},",
+						"          {Last Name},",
+						"          Company,",
+						"          City,",
+						"          Country,",
+						"          {Phone 1},",
+						"          Email,",
+						"          {Subscription Date},",
+						"          Website",
+						"     ),",
+						"     partitionBy('roundRobin', 2),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> selectcolumns",
+						"selectcolumns derive({Full name} = concat({First Name},' ',{Last Name})) ~> concatnames",
+						"selectcolumns aggregate(groupBy(Country),",
+						"     {customer count} = count({Customer Id})) ~> customercountbycountry",
+						"concatnames select(mapColumn(",
+						"          Index,",
+						"          {Customer Id},",
+						"          {Full name},",
+						"          Company,",
+						"          City,",
+						"          Country,",
+						"          {Phone 1},",
+						"          Email,",
+						"          {Subscription Date},",
+						"          Website",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> keepfields",
+						"customercountbycountry sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> customersaggregated",
+						"keepfields sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          {Index     Customer Id     First Name     Last Name     Company     City     Country     Phone 1     Phone 2     Email     Subscription Date     Website} as string",
+						"     ),",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> customerrawdata"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/metadata_based_dataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ds_adls_parameterized_dynamic",
+								"type": "DatasetReference"
+							},
+							"name": "dynamicsourceformultipledatastreams"
+						}
+					],
+					"sinks": [
+						{
+							"name": "sink1"
+						},
+						{
+							"name": "sink2"
+						},
+						{
+							"name": "sink3"
+						}
+					],
+					"transformations": [
+						{
+							"name": "split1"
+						},
+						{
+							"name": "aggregate1"
+						},
+						{
+							"name": "join1"
+						},
+						{
+							"name": "split2"
+						},
+						{
+							"name": "select1"
+						},
+						{
+							"name": "select2"
+						},
+						{
+							"name": "select3"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          order_id as string,",
+						"          order_date as string,",
+						"          customer_id as string,",
+						"          order_status as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     rowUrlColumn: ('source_file_name')) ~> dynamicsourceformultipledatastreams",
+						"dynamicsourceformultipledatastreams split(instr(byName('source_file_name'),'orders.csv')>0,",
+						"     instr(byName('source_file_name'),'order_items.csv')>0,",
+						"     disjoint: false) ~> split1@(orders, orderitems, invalid)",
+						"split1@orderitems aggregate(groupBy(order_id = toString(byName('order_id'))),",
+						"     total_amount = sum(toDecimal(byName('total_amount')))) ~> aggregate1",
+						"split1@orders, aggregate1 join(split1@orders@order_id == aggregate1@order_id,",
+						"     joinType:'outer',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join1",
+						"join1 split(total_amount>=500,",
+						"     total_amount<500,",
+						"     disjoint: false) ~> split2@(morethan500, lessthan500, nomatch)",
+						"split2@morethan500 select(mapColumn(",
+						"          order_id = split2@morethan500@order_id,",
+						"          order_date,",
+						"          customer_id,",
+						"          order_status,",
+						"          total_amount",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"split2@lessthan500 select(mapColumn(",
+						"          order_id = split2@lessthan500@order_id,",
+						"          order_date,",
+						"          customer_id,",
+						"          order_status,",
+						"          total_amount",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"split2@nomatch select(mapColumn(",
+						"          order_id = split2@nomatch@order_id,",
+						"          order_date,",
+						"          customer_id,",
+						"          order_status,",
+						"          total_amount",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select3",
+						"select1 sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> sink1",
+						"select2 sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> sink2",
+						"select3 sink(validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     store: 'cache',",
+						"     format: 'inline',",
+						"     output: false,",
+						"     saveOrder: 1) ~> sink3"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/4_dataflow_ingest_multiple_files_using_meta_db_and_lookup')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "fetch ingest info from metadb",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "select * from [meta].[control_list] where id in (9,10)",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ds_meta_db",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "fetch ingest info from metadb",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('fetch ingest info from metadb').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "Data flow1",
+									"type": "ExecuteDataFlow",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataflow": {
+											"referenceName": "metadata_based_dataflow",
+											"type": "DataFlowReference",
+											"parameters": {},
+											"datasetParameters": {
+												"dynamicsourceformultipledatastreams": {
+													"destination_path": {
+														"value": "@item().destination_file_path",
+														"type": "Expression"
+													},
+													"file_name": "@concat(item().name,'.',item().file_extension)",
+													"file_system": {
+														"value": "@item().file_system",
+														"type": "Expression"
+													}
+												},
+												"sink1": {},
+												"sink2": {},
+												"sink3": {}
+											}
+										},
+										"staging": {},
+										"compute": {
+											"coreCount": 8,
+											"computeType": "General"
+										},
+										"traceLevel": "Fine"
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "Session4 pipelines"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/metadata_based_dataflow')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/HttpToADLS')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -124,7 +1118,9 @@
 				},
 				"annotations": []
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/CleanDataFromADLS')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/tr_customers_pipeline_adls_to_sql')]",
@@ -152,7 +1148,9 @@
 					}
 				}
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/CopyFromADLSToSQL')]"
+			]
 		}
 	]
 }

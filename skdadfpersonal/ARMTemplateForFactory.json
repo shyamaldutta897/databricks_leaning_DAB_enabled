@@ -57,6 +57,88 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/10_get_secrets_from_key_vault_dynamic')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "This pipeline is exactly same as sl no 9, except this is more dynamic and accepts parameter in places of hardcoded values in the URI. Rest everything remains the same.",
+				"activities": [
+					{
+						"name": "connect to key vault",
+						"type": "WebActivity",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "GET",
+							"headers": {},
+							"url": {
+								"value": "https://@{pipeline().parameters.p_kv_name}.vault.azure.net/secrets/@{pipeline().parameters.p_key_details}?api-version=7.5",
+								"type": "Expression"
+							},
+							"authentication": {
+								"type": "MSI",
+								"resource": "https://vault.azure.net"
+							}
+						}
+					},
+					{
+						"name": "get the secret value",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "connect to key vault",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "var_secret_value",
+							"value": {
+								"value": "@activity('connect to key vault').output.value",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_kv_name": {
+						"type": "string",
+						"defaultValue": "kvskdpersonalnew"
+					},
+					"p_key_details": {
+						"type": "string",
+						"defaultValue": "adls-key/fe8304ac93de447690a1c4d61c374003"
+					}
+				},
+				"variables": {
+					"var_secret_value": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "Interview_practice"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/1IncrementalCopyFromSQLToADLS')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -78,7 +160,7 @@
 						"typeProperties": {
 							"source": {
 								"type": "AzureSqlSource",
-								"sqlReaderQuery": "select * from meta.control_list where is_table='true'",
+								"sqlReaderQuery": "select * from meta.control_list where mode='incremental'",
 								"queryTimeout": "02:00:00",
 								"partitionOption": "None"
 							},
@@ -470,6 +552,7 @@
 						"typeProperties": {
 							"source": {
 								"type": "AzureSqlSource",
+								"sqlReaderQuery": "select * from meta.control_list where mode='overwrite'",
 								"queryTimeout": "02:00:00",
 								"partitionOption": "None"
 							},
@@ -1485,6 +1568,513 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/7_copy_only_those_files_which_dont_exist_in_target_location')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "1. Add a get metadata from source, list all childitems\n2. Repeat the same for sink location\n3. Add filter activity. It has items which is nothing but an iterating field. Meaning the array that we pass here will be iterated over. We'll pass the childlitems list of source metadata, because these values will be checked one by one against sink.\n4. Next in condition filed, we use a contains expression. Convert the array value of sink childitems array into a plain string separated by commas, for that reason we use the string function. Next pick each value from source and see if it exists in the string. If no then get the output.\n5. Next foreach activity to list the output and we pick only the value field from the output dict (output.value)\n6. Inside for each, setup a copy actvity and pass the file names as item().name.",
+				"activities": [
+					{
+						"name": "Get childitems from source",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_adls_wo_filename",
+								"type": "DatasetReference",
+								"parameters": {
+									"file_system": {
+										"value": "landing",
+										"type": "Expression"
+									},
+									"folder": {
+										"value": "files",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "Get childitems from sink",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_adls_wo_filename",
+								"type": "DatasetReference",
+								"parameters": {
+									"file_system": "adfpipelines",
+									"folder": "files_copy"
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "filter files that exists in source but not in sink",
+						"type": "Filter",
+						"dependsOn": [
+							{
+								"activity": "Get childitems from sink",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Get childitems from source",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get childitems from source').output.childItems",
+								"type": "Expression"
+							},
+							"condition": {
+								"value": "@not(contains(string(activity('Get childitems from sink').output.childItems),concat('\"',item().name,'\"')))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Pick up output from filter",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "filter files that exists in source but not in sink",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('filter files that exists in source but not in sink').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy only those files that are not in sink",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"wildcardFolderPath": "files",
+												"wildcardFileName": "*",
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_adls_only_folder_param",
+											"type": "DatasetReference",
+											"parameters": {
+												"file_system": "landing",
+												"folder_path": "files"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_adls_parameterized_dynamic",
+											"type": "DatasetReference",
+											"parameters": {
+												"destination_path": "files_copy",
+												"file_name": {
+													"value": "@item().name",
+													"type": "Expression"
+												},
+												"file_system": "adfpipelines"
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"file_names": {
+						"type": "Array"
+					}
+				},
+				"folder": {
+					"name": "Interview_practice"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_adls_wo_filename')]",
+				"[concat(variables('factoryId'), '/datasets/ds_adls_only_folder_param')]",
+				"[concat(variables('factoryId'), '/datasets/ds_adls_parameterized_dynamic')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/8_copy_files_that_are_n_days_old')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "1. Get all childitems from a folder. We need only container and folder for this activity.\n2. Loop through the list of childitems\n3. Inside the loop activity add another metadata activity. In this activity we need filename as well, because we need last modified of each and every file.\n4. Add if condition. Check difference between the last modified date and current date. Explanation of the formula in the if activity.\n5. If true, then copy the files else do nothing.",
+				"activities": [
+					{
+						"name": "get list of childitems in a folder",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_adls_only_folder_param",
+								"type": "DatasetReference",
+								"parameters": {
+									"file_system": "landing",
+									"folder_path": "files"
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "pick each file as output from get metadata",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "get list of childitems in a folder",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('get list of childitems in a folder').output.childItems",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "take file names as input",
+									"description": "take file names as input from for each and fetch last modified",
+									"type": "GetMetadata",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "ds_adls_parameterized_dynamic",
+											"type": "DatasetReference",
+											"parameters": {
+												"destination_path": "files",
+												"file_name": {
+													"value": "@item().name",
+													"type": "Expression"
+												},
+												"file_system": "landing"
+											}
+										},
+										"fieldList": [
+											"lastModified"
+										],
+										"storeSettings": {
+											"type": "AzureBlobFSReadSettings",
+											"recursive": true,
+											"enablePartitionDiscovery": false
+										},
+										"formatSettings": {
+											"type": "DelimitedTextReadSettings"
+										}
+									}
+								},
+								{
+									"name": "check if last modified is less than n days",
+									"description": "check if last modified is less than n days(pipeline param)\ngreaterOrEquals - Greater than or equal to\ndiv - divide\nsub - subtract\nticks - convert date value into int\n\nSo altogether - convert last modified and current date into int, subtract the values and divide by 864000000000 (number of seconds in 24 hours) to get the output in days.\n",
+									"type": "IfCondition",
+									"dependsOn": [
+										{
+											"activity": "take file names as input",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@greaterOrEquals(\n    div(sub(ticks(formatDateTime(utcNow(),'yyyy-MM-dd')), ticks(formatDateTime(activity('take file names as input').output.lastModified,'yyyy-MM-dd'))), 864000000000), \n    pipeline().parameters.days_old\n)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "copy files that are older than n days",
+												"type": "Copy",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "DelimitedTextSource",
+														"storeSettings": {
+															"type": "AzureBlobFSReadSettings",
+															"recursive": false,
+															"wildcardFolderPath": "files",
+															"wildcardFileName": "*",
+															"enablePartitionDiscovery": false
+														},
+														"formatSettings": {
+															"type": "DelimitedTextReadSettings"
+														}
+													},
+													"sink": {
+														"type": "DelimitedTextSink",
+														"storeSettings": {
+															"type": "AzureBlobFSWriteSettings"
+														},
+														"formatSettings": {
+															"type": "DelimitedTextWriteSettings",
+															"quoteAllText": true,
+															"fileExtension": ".txt"
+														}
+													},
+													"enableStaging": false,
+													"translator": {
+														"type": "TabularTranslator",
+														"typeConversion": true,
+														"typeConversionSettings": {
+															"allowDataTruncation": true,
+															"treatBooleanAsNumber": false
+														}
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "ds_adls_only_folder_param",
+														"type": "DatasetReference",
+														"parameters": {
+															"file_system": "landing",
+															"folder_path": "files"
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "ds_adls_only_folder_param",
+														"type": "DatasetReference",
+														"parameters": {
+															"file_system": "adfpipelines",
+															"folder_path": "old_files"
+														}
+													}
+												]
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"days_old": {
+						"type": "int"
+					}
+				},
+				"variables": {
+					"file_names": {
+						"type": "Array"
+					}
+				},
+				"folder": {
+					"name": "Interview_practice"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_adls_only_folder_param')]",
+				"[concat(variables('factoryId'), '/datasets/ds_adls_parameterized_dynamic')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/9_get_secrets_from_key_vault')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "This pipeline is about fetching secret values from key vault. To do that first we need to assign Key Vault Secret User role to ADF as a managed identity. Then use a Web activity and use the Secret URI from key vault secret. This should be followed by a static value of '?api-version=x.x' as provided in the microsoft document. Since it is about fetching a value so the method should be get. Resource field of Web Activity should be filled with a value that is provided in the microsoft document. Here is the link - https://learn.microsoft.com/en-us/azure/data-factory/how-to-use-azure-key-vault-secrets-pipeline-activities",
+				"activities": [
+					{
+						"name": "connect to key vault",
+						"type": "WebActivity",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "GET",
+							"headers": {},
+							"url": "https://kvskdpersonalnew.vault.azure.net/secrets/adls-key/fe8304ac93de447690a1c4d61c374003?api-version=7.5",
+							"authentication": {
+								"type": "MSI",
+								"resource": "https://vault.azure.net"
+							}
+						}
+					},
+					{
+						"name": "get the secret value",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "connect to key vault",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "var_secret_value",
+							"value": {
+								"value": "@activity('connect to key vault').output.value",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"var_secret_value": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "Interview_practice"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/CopyFromADLSToSQL')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -1915,6 +2505,76 @@
 						"type": "String"
 					}
 				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_adls_sink')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "files_copy",
+						"fileSystem": "adfpipelines"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_adls_wo_filename')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_adls",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"file_system": {
+						"type": "string"
+					},
+					"folder": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().folder",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().file_system",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
