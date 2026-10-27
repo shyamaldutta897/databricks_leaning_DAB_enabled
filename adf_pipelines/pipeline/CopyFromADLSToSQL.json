@@ -140,7 +140,10 @@
 							"outputs": [
 								{
 									"referenceName": "ds_customers_upsert",
-									"type": "DatasetReference"
+									"type": "DatasetReference",
+									"parameters": {
+										"temp": "test"
+									}
 								}
 							]
 						},
