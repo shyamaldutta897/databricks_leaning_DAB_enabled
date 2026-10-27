@@ -13,6 +13,6 @@
 			"enableServerCertificateValidation": true,
 			"authenticationType": "Anonymous"
 		},
-		"description": "gh linked service"
+		"description": "gh linked service "
 	}
 }
