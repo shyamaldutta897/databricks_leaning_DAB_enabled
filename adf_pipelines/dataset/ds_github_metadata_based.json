@@ -32,7 +32,6 @@
 			"columnDelimiter": ",",
 			"escapeChar": "\\",
 			"firstRowAsHeader": true,
-			"nullValue": "sql_admin",
 			"quoteChar": "\""
 		},
 		"schema": []
