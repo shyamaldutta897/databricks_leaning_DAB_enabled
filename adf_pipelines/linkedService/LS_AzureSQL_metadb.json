@@ -1,6 +1,7 @@
 {
 	"name": "LS_AzureSQL_metadb",
 	"properties": {
+		"description": "azure sql ls",
 		"annotations": [],
 		"type": "AzureSqlDatabase",
 		"typeProperties": {
@@ -18,8 +19,7 @@
 				},
 				"secretName": "sql-db-password"
 			}
-		},
-		"description": "azure sql ls"
+		}
 	},
 	"type": "Microsoft.DataFactory/factories/linkedservices"
 }
