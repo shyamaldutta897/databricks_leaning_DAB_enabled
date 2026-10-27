@@ -31,7 +31,7 @@
 			"type": "string",
 			"defaultValue": "sql_admin"
 		},
-		"LS_adls_properties_typeProperties_url": {
+		"LS_adls_new_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://stgskdpersonaldev.dfs.core.windows.net/"
 		},
@@ -137,6 +137,307 @@
 				"annotations": []
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/11_dynamic_copy_with_mapping_fields')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "This pipeline is about copying multiple files with mapping schemas activated. Basically whenever we activate mapping schema, all files coming through that copy activity has to be of same schema. But here requirement is to copy multiple files with different schemas but also keep in consideration that this is a schema based mapping. Basically if we want to update schema (fieldnames, types etc) while copying we can use this approach.\n\n1. First get all the files into the copy activity and import schema. Then go to the copy activity source code and copy the entire json portion of mapping section.\n2. Then create a pipeline parameter and push this json part as an object. We can update field names here as well. If there are multiple files then there can be multiple pipeline parameters with multiple schemas with each schema pointed to one file.\n3. Get a getmetadata activity and get the file names\n4. Push them into a for each activity\n5. Push the copy activity inside the for each activity and pass the file names to copy one by one.\n6. In the copy activity, under mapping section remove all the mapping and then activate a dynamic mapping - basically an if condtition based on the filenames and which schema to pick accordingly. \n\nThis method is good when the number of files are limited. If the number increase then we need to go for metadata based approach.\n\nRefer to chatgpt if this description is confusing. Copy the json of this pipeline and feed into it.",
+				"activities": [
+					{
+						"name": "Loop over the files list",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "get filenames",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('get filenames').output.childItems",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "copy data with mapping fields",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"value": "@if(contains(item().name, 'customers'), pipeline().parameters.p_map_1, pipeline().parameters.p_map_2)",
+											"type": "Expression"
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_adls_parameterized_dynamic",
+											"type": "DatasetReference",
+											"parameters": {
+												"destination_path": "mapping_copy",
+												"file_name": {
+													"value": "@item().name",
+													"type": "Expression"
+												},
+												"file_system": "landing"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_adls_parameterized_dynamic",
+											"type": "DatasetReference",
+											"parameters": {
+												"destination_path": "files",
+												"file_name": {
+													"value": "@item().name",
+													"type": "Expression"
+												},
+												"file_system": "bronze"
+											}
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"name": "get filenames",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_adls_only_folder_param",
+								"type": "DatasetReference",
+								"parameters": {
+									"file_system": "landing",
+									"folder_path": "mapping_copy"
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_map_1": {
+						"type": "object",
+						"defaultValue": [
+							{
+								"source": {
+									"name": "Index",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Index",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Customer Id",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Customer Id",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "First Name",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "First Name",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Last Name",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Last Name",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Company",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Company",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "City",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "City",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Country",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Country",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Phone 1",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Phone 1",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Phone 2",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Phone 2",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Email",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Email",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Subscription Date",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Subscription Date",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Website",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Website",
+									"type": "String",
+									"physicalType": "String"
+								}
+							}
+						]
+					},
+					"p_map_2": {
+						"type": "object",
+						"defaultValue": "[                 {                     \"source\": {                         \"name\": \"id\",                         \"type\": \"String\",                         \"physicalType\": \"String\"                     },                     \"sink\": {                         \"name\": \"id\",                         \"type\": \"String\",                         \"physicalType\": \"String\"                     }                 },                 {                     \"source\": {                         \"name\": \"department_id\",                         \"type\": \"String\",                         \"physicalType\": \"String\"                     },                     \"sink\": {                         \"name\": \"department_id\",                         \"type\": \"String\",                         \"physicalType\": \"String\"                     }                 },                 {                     \"source\": {                         \"name\": \"category_name\",                         \"type\": \"String\",                         \"physicalType\": \"String\"                     },                     \"sink\": {                         \"name\": \"category_name\",                         \"type\": \"String\",                         \"physicalType\": \"String\"                     }                 }             ],"
+					}
+				},
+				"folder": {
+					"name": "Interview_practice"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_adls_only_folder_param')]",
+				"[concat(variables('factoryId'), '/datasets/ds_adls_parameterized_dynamic')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/1IncrementalCopyFromSQLToADLS')]",
@@ -626,7 +927,7 @@
 											},
 											"logLocationSettings": {
 												"linkedServiceName": {
-													"referenceName": "LS_adls",
+													"referenceName": "LS_adls_new",
 													"type": "LinkedServiceReference"
 												}
 											}
@@ -693,7 +994,7 @@
 				"[concat(variables('factoryId'), '/datasets/ds_meta_db')]",
 				"[concat(variables('factoryId'), '/datasets/ds_github_metadata_based')]",
 				"[concat(variables('factoryId'), '/datasets/ds_retail_db_csv_metadata_based')]",
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -1455,7 +1756,7 @@
 								},
 								"logLocationSettings": {
 									"linkedServiceName": {
-										"referenceName": "LS_adls",
+										"referenceName": "LS_adls_new",
 										"type": "LinkedServiceReference"
 									},
 									"path": "adfpipelines/copy_activity_logging"
@@ -1564,7 +1865,7 @@
 				"[concat(variables('factoryId'), '/datasets/ds_city_state_destination')]",
 				"[concat(variables('factoryId'), '/datasets/ds_logging_json_file')]",
 				"[concat(variables('factoryId'), '/datasets/ds_json_logging_with_additional_columns')]",
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2222,7 +2523,9 @@
 										{
 											"referenceName": "ds_customers_upsert",
 											"type": "DatasetReference",
-											"parameters": {}
+											"parameters": {
+												"temp": "test"
+											}
 										}
 									]
 								},
@@ -2253,7 +2556,7 @@
 										},
 										"logStorageSettings": {
 											"linkedServiceName": {
-												"referenceName": "LS_adls",
+												"referenceName": "LS_adls_new",
 												"type": "LinkedServiceReference"
 											},
 											"path": "adfpipelines/delete_logs_adf"
@@ -2281,7 +2584,7 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/ds_customers_csv2')]",
 				"[concat(variables('factoryId'), '/datasets/ds_customers_upsert')]",
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2408,7 +2711,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"parameters": {
@@ -2441,7 +2744,7 @@
 				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2450,7 +2753,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"parameters": {
@@ -2487,27 +2790,10 @@
 					"firstRowAsHeader": true,
 					"quoteChar": "\""
 				},
-				"schema": [
-					{
-						"name": "order_id",
-						"type": "String"
-					},
-					{
-						"name": "order_date",
-						"type": "String"
-					},
-					{
-						"name": "customer_id",
-						"type": "String"
-					},
-					{
-						"name": "order_status",
-						"type": "String"
-					}
-				]
+				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2516,7 +2802,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -2535,7 +2821,7 @@
 				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2544,7 +2830,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"parameters": {
@@ -2577,7 +2863,7 @@
 				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2586,7 +2872,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -2610,7 +2896,7 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2619,7 +2905,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -2644,7 +2930,7 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2688,7 +2974,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -2716,7 +3002,7 @@
 				]
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2725,7 +3011,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -2744,7 +3030,7 @@
 				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2753,7 +3039,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"folder": {
@@ -2772,7 +3058,7 @@
 				"schema": {}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2781,7 +3067,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"folder": {
@@ -2809,7 +3095,7 @@
 				]
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2818,7 +3104,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"folder": {
@@ -2890,7 +3176,7 @@
 				]
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2899,7 +3185,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -2964,7 +3250,7 @@
 				]
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -2975,6 +3261,11 @@
 				"linkedServiceName": {
 					"referenceName": "LS_AzureSQL",
 					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"temp": {
+						"type": "string"
+					}
 				},
 				"annotations": [],
 				"type": "AzureSqlTable",
@@ -2994,7 +3285,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"folder": {
@@ -3016,7 +3307,7 @@
 				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -3055,7 +3346,6 @@
 					"columnDelimiter": ",",
 					"escapeChar": "\\",
 					"firstRowAsHeader": true,
-					"nullValue": "sql_admin",
 					"quoteChar": "\""
 				},
 				"schema": []
@@ -3193,7 +3483,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -3208,7 +3498,7 @@
 				"schema": {}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -3217,7 +3507,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -3232,7 +3522,7 @@
 				"schema": {}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -3246,54 +3536,7 @@
 				},
 				"annotations": [],
 				"type": "AzureSqlTable",
-				"schema": [
-					{
-						"name": "id",
-						"type": "int",
-						"precision": 10
-					},
-					{
-						"name": "source_id",
-						"type": "int",
-						"precision": 10
-					},
-					{
-						"name": "is_table",
-						"type": "bit"
-					},
-					{
-						"name": "source_db",
-						"type": "varchar"
-					},
-					{
-						"name": "source_schema",
-						"type": "varchar"
-					},
-					{
-						"name": "name",
-						"type": "varchar"
-					},
-					{
-						"name": "base_url",
-						"type": "varchar"
-					},
-					{
-						"name": "relative_url",
-						"type": "varchar"
-					},
-					{
-						"name": "destination_file_path",
-						"type": "varchar"
-					},
-					{
-						"name": "file_extension",
-						"type": "varchar"
-					},
-					{
-						"name": "file_system",
-						"type": "varchar"
-					}
-				],
+				"schema": [],
 				"typeProperties": {
 					"schema": "meta",
 					"table": "control_list"
@@ -3309,7 +3552,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"parameters": {
@@ -3362,7 +3605,7 @@
 				]
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -3371,7 +3614,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"parameters": {
@@ -3405,7 +3648,7 @@
 				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -3414,7 +3657,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -3474,7 +3717,7 @@
 				]
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -3482,6 +3725,7 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"description": "azure sql linked service",
 				"annotations": [],
 				"type": "AzureSqlDatabase",
 				"typeProperties": {
@@ -3535,14 +3779,14 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/LS_adls')]",
+			"name": "[concat(parameters('factoryName'), '/LS_adls_new')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"annotations": [],
 				"type": "AzureBlobFS",
 				"typeProperties": {
-					"url": "[parameters('LS_adls_properties_typeProperties_url')]",
+					"url": "[parameters('LS_adls_new_properties_typeProperties_url')]",
 					"accountKey": {
 						"type": "AzureKeyVaultSecret",
 						"store": {
@@ -3577,7 +3821,7 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"description": "gh linked service",
+				"description": "gh linked service ",
 				"parameters": {
 					"base_url": {
 						"type": "string"
@@ -3618,6 +3862,7 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"description": "key vault linked service",
 				"annotations": [],
 				"type": "AzureKeyVault",
 				"typeProperties": {

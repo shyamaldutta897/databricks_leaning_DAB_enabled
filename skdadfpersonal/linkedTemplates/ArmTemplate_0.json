@@ -47,7 +47,7 @@
 			"type": "string",
 			"defaultValue": "sql_admin"
 		},
-		"LS_adls_properties_typeProperties_url": {
+		"LS_adls_new_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://stgskdpersonaldev.dfs.core.windows.net/"
 		}
@@ -227,7 +227,7 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"description": "gh linked service",
+				"description": "gh linked service ",
 				"parameters": {
 					"base_url": {
 						"type": "string"
@@ -268,6 +268,7 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"description": "key vault linked service",
 				"annotations": [],
 				"type": "AzureKeyVault",
 				"typeProperties": {
@@ -347,7 +348,6 @@
 					"columnDelimiter": ",",
 					"escapeChar": "\\",
 					"firstRowAsHeader": true,
-					"nullValue": "sql_admin",
 					"quoteChar": "\""
 				},
 				"schema": []
@@ -484,6 +484,7 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"description": "azure sql linked service",
 				"annotations": [],
 				"type": "AzureSqlDatabase",
 				"typeProperties": {
@@ -537,14 +538,14 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/LS_adls')]",
+			"name": "[concat(parameters('factoryName'), '/LS_adls_new')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"annotations": [],
 				"type": "AzureBlobFS",
 				"typeProperties": {
-					"url": "[parameters('LS_adls_properties_typeProperties_url')]",
+					"url": "[parameters('LS_adls_new_properties_typeProperties_url')]",
 					"accountKey": {
 						"type": "AzureKeyVaultSecret",
 						"store": {
@@ -565,7 +566,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"parameters": {
@@ -598,7 +599,7 @@
 				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -607,7 +608,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"parameters": {
@@ -644,27 +645,10 @@
 					"firstRowAsHeader": true,
 					"quoteChar": "\""
 				},
-				"schema": [
-					{
-						"name": "order_id",
-						"type": "String"
-					},
-					{
-						"name": "order_date",
-						"type": "String"
-					},
-					{
-						"name": "customer_id",
-						"type": "String"
-					},
-					{
-						"name": "order_status",
-						"type": "String"
-					}
-				]
+				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -673,7 +657,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -692,7 +676,7 @@
 				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -701,7 +685,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"parameters": {
@@ -734,7 +718,7 @@
 				"schema": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -743,7 +727,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -767,7 +751,7 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -776,7 +760,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -801,7 +785,7 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		},
 		{
@@ -810,7 +794,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
-					"referenceName": "LS_adls",
+					"referenceName": "LS_adls_new",
 					"type": "LinkedServiceReference"
 				},
 				"annotations": [],
@@ -838,7 +822,7 @@
 				]
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_adls')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_new')]"
 			]
 		}
 	]

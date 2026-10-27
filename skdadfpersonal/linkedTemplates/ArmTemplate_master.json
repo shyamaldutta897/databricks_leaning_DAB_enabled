@@ -31,7 +31,7 @@
 			"type": "string",
 			"defaultValue": "sql_admin"
 		},
-		"LS_adls_properties_typeProperties_url": {
+		"LS_adls_new_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://stgskdpersonaldev.dfs.core.windows.net/"
 		},
@@ -108,8 +108,8 @@
 					"LS_AzureSQL_metadb_properties_typeProperties_userName": {
 						"value": "[parameters('LS_AzureSQL_metadb_properties_typeProperties_userName')]"
 					},
-					"LS_adls_properties_typeProperties_url": {
-						"value": "[parameters('LS_adls_properties_typeProperties_url')]"
+					"LS_adls_new_properties_typeProperties_url": {
+						"value": "[parameters('LS_adls_new_properties_typeProperties_url')]"
 					}
 				}
 			},
