@@ -2523,9 +2523,7 @@
 										{
 											"referenceName": "ds_customers_upsert",
 											"type": "DatasetReference",
-											"parameters": {
-												"temp": "test"
-											}
+											"parameters": {}
 										}
 									]
 								},
@@ -3261,11 +3259,6 @@
 				"linkedServiceName": {
 					"referenceName": "LS_AzureSQL",
 					"type": "LinkedServiceReference"
-				},
-				"parameters": {
-					"temp": {
-						"type": "string"
-					}
 				},
 				"annotations": [],
 				"type": "AzureSqlTable",

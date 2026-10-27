@@ -259,11 +259,6 @@
 					"referenceName": "LS_AzureSQL",
 					"type": "LinkedServiceReference"
 				},
-				"parameters": {
-					"temp": {
-						"type": "string"
-					}
-				},
 				"annotations": [],
 				"type": "AzureSqlTable",
 				"schema": [],

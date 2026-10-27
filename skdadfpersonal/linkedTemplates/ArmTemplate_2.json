@@ -746,9 +746,7 @@
 										{
 											"referenceName": "ds_customers_upsert",
 											"type": "DatasetReference",
-											"parameters": {
-												"temp": "test"
-											}
+											"parameters": {}
 										}
 									]
 								},
