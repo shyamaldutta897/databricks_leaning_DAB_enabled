@@ -2,7 +2,7 @@
 	"name": "dynamic_csv_output",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "LS_adls",
+			"referenceName": "LS_adls_new",
 			"type": "LinkedServiceReference"
 		},
 		"annotations": [],

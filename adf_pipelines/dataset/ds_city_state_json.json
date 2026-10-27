@@ -2,7 +2,7 @@
 	"name": "ds_city_state_json",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "LS_adls",
+			"referenceName": "LS_adls_new",
 			"type": "LinkedServiceReference"
 		},
 		"annotations": [],

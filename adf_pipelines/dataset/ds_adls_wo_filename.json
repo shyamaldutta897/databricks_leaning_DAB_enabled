@@ -2,7 +2,7 @@
 	"name": "ds_adls_wo_filename",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "LS_adls",
+			"referenceName": "LS_adls_new",
 			"type": "LinkedServiceReference"
 		},
 		"parameters": {

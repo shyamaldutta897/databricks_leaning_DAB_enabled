@@ -2,7 +2,7 @@
 	"name": "ds_logging_json_file",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "LS_adls",
+			"referenceName": "LS_adls_new",
 			"type": "LinkedServiceReference"
 		},
 		"annotations": [],

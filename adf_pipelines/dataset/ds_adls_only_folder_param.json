@@ -2,7 +2,7 @@
 	"name": "ds_adls_only_folder_param",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "LS_adls",
+			"referenceName": "LS_adls_new",
 			"type": "LinkedServiceReference"
 		},
 		"parameters": {

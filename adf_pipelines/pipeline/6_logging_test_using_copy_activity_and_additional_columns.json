@@ -36,21 +36,7 @@
 							"type": "JsonWriteSettings"
 						}
 					},
-					"enableStaging": false,
-					"logSettings": {
-						"enableCopyActivityLog": true,
-						"copyActivityLogSettings": {
-							"logLevel": "Warning",
-							"enableReliableLogging": false
-						},
-						"logLocationSettings": {
-							"linkedServiceName": {
-								"referenceName": "LS_adls",
-								"type": "LinkedServiceReference"
-							},
-							"path": "adfpipelines/copy_activity_logging"
-						}
-					}
+					"enableStaging": false
 				},
 				"inputs": [
 					{

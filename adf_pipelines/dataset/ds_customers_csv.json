@@ -1,10 +1,6 @@
 {
 	"name": "ds_customers_csv",
 	"properties": {
-		"linkedServiceName": {
-			"referenceName": "LS_adls",
-			"type": "LinkedServiceReference"
-		},
 		"folder": {
 			"name": "session1-intro"
 		},

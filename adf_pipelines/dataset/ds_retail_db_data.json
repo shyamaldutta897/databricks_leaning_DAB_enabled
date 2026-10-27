@@ -2,7 +2,7 @@
 	"name": "ds_retail_db_data",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "LS_adls",
+			"referenceName": "LS_adls_new",
 			"type": "LinkedServiceReference"
 		},
 		"parameters": {

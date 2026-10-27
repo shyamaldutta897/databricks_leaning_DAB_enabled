@@ -2,7 +2,7 @@
 	"name": "ds_adls_parameterized_dynamic",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "LS_adls",
+			"referenceName": "LS_adls_new",
 			"type": "LinkedServiceReference"
 		},
 		"parameters": {
