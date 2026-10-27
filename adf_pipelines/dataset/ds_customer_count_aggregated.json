@@ -1,6 +1,10 @@
 {
 	"name": "ds_customer_count_aggregated",
 	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_adls_new",
+			"type": "LinkedServiceReference"
+		},
 		"folder": {
 			"name": "session1-intro"
 		},
