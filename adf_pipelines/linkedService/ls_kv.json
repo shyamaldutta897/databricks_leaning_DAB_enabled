@@ -5,6 +5,7 @@
 		"type": "AzureKeyVault",
 		"typeProperties": {
 			"baseUrl": "https://kvskdpersonalnew.vault.azure.net/"
-		}
+		},
+		"description": "key vault linked service"
 	}
 }
