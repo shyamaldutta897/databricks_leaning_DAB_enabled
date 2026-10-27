@@ -18,7 +18,8 @@
 				},
 				"secretName": "sql-db-password"
 			}
-		}
+		},
+		"description": "azure sql linked service"
 	},
 	"type": "Microsoft.DataFactory/factories/linkedservices"
 }
